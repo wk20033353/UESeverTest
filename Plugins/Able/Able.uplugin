@@ -1,0 +1,79 @@
+{
+	"FileVersion": 3,
+	"Version": 82,
+	"VersionName": "3.75",
+	"FriendlyName": "Able",
+	"Description": "A suite of data driven tools to create and edit Abilities.",
+	"Category": "Able",
+	"CreatedBy": "Extra Life Studios, LLC",
+	"CreatedByURL": "https://extralifestudios.com",
+	"DocsURL": "http://able.extralifestudios.com",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/567d7a4af24a4c0eaab75961e0686feb",
+	"SupportURL": "http://able.extralifestudios.com",
+	"EngineVersion": "4.27.0",
+	"CanContainContent": false,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "Able",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Win32",
+				"Mac",
+				"IOS",
+				"Android",
+				"PS4",
+				"Linux",
+				"XboxOne",
+				"Switch"
+			]
+		},
+		{
+			"Name": "AbleCore",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Win32",
+				"Mac",
+				"IOS",
+				"Android",
+				"PS4",
+				"Linux",
+				"XboxOne",
+				"Switch"
+			]
+		},
+		{
+			"Name": "AbleEditor",
+			"Type": "UncookedOnly",
+			"LoadingPhase": "PreDefault",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Win32",
+				"Mac",
+				"Linux"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "GameplayTagsEditor",
+			"Enabled": true
+		},
+		{
+			"Name": "Niagara",
+			"Enabled": true
+		},
+		{
+			"Name": "EnhancedInput",
+			"Enabled": true
+		},
+		{
+			"Name": "GameplayCameras",
+			"Enabled": true
+		}
+	]
+}

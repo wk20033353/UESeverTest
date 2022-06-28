@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "AbleCore/Classes/ablAbilityComponent.h"
 #include "ThirdPersonCharacter.generated.h"
 
 UCLASS(config=Game)
-class AThirdPersonCharacter : public ACharacter
+class THIRDPERSON_API AThirdPersonCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
@@ -90,6 +91,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 		float TakeDamage(float DamageTaken, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
+	UFUNCTION(BlueprintCallable, Category = "Skill")
+		void PlaySkill(const FString& filePath, AActor* Sender = nullptr, bool bPlayImmediately = true);
+	UFUNCTION(BlueprintCallable, Category = "Skill")
+	void StopSkill(EAblAbilityTaskResult reason);
+
 protected:
 	/** RepNotify，用于同步对当前生命值所做的更改。*/
 	UFUNCTION()
@@ -133,5 +139,8 @@ protected:
 
 	/** 定时器句柄，用于提供生成间隔时间内的射速延迟。*/
 	FTimerHandle FiringTimer;
+
+	/** 技能组件 */
+	UAblAbilityComponent* m_SkillComp;
 };
 

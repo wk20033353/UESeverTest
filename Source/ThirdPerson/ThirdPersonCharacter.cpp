@@ -11,6 +11,9 @@
 #include "Net/UnrealNetwork.h"
 #include "Engine/Engine.h"
 #include "ThirdPersonBullet.h"
+#include "Utiltiy/GAssetManager.h"
+#include "AbleCore/Classes/ablAbility.h"
+#include "AbleCore/Classes/ablAbilityBlueprintLibrary.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AThirdPersonCharacter
@@ -45,6 +48,10 @@ AThirdPersonCharacter::AThirdPersonCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+
+	// Create able Component
+	m_SkillComp = CreateDefaultSubobject<UAblAbilityComponent>("AbleComponent");
+	m_SkillComp->SetIsReplicated(true);
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
@@ -241,4 +248,50 @@ void AThirdPersonCharacter::HandleFire_Implementation()
 	spawnParameters.Owner = this;
 
 	AThirdPersonBullet* spawnedProjectile = GetWorld()->SpawnActor<AThirdPersonBullet>(spawnLocation, spawnRotation, spawnParameters);
+}
+
+
+
+void AThirdPersonCharacter::PlaySkill(const FString& filePath, AActor* Sender, bool bPlayImmediately)
+{
+	if (filePath.IsEmpty())
+	{
+		UE_LOG(LogTemp, Error, TEXT("AGPlayerCharacter::PlaySkill Path is empty!!!"));
+		return;
+	}
+
+	UGAssetManager::Get()->AsyncLoadBluePrint(filePath, [this, filePath, Sender, bPlayImmediately](UObject* pObj) {
+		if (pObj == nullptr)
+		{
+			UE_LOG(LogTemp, Error, TEXT("AGPlayerCharacter::PlaySkill No Object: %s"), *filePath);
+			return;
+		}
+
+		if (bPlayImmediately)
+		{
+			this->StopSkill(EAblAbilityTaskResult::Interrupted);
+		}
+
+		UBlueprintGeneratedClass* Bp = Cast<UBlueprintGeneratedClass>(pObj);
+		UAblAbility* pAbility = NewObject<UAblAbility>(this, Bp);
+		if (Sender == nullptr)
+		{
+			UAblAbilityContext* pContext = UAblAbilityBlueprintLibrary::CreateAbilityContext(pAbility, m_SkillComp, GetOwner(), GetOwner());
+			m_SkillComp->ActivateAbility(pContext);
+		}
+		else
+		{
+			UAblAbilityContext* pContext = UAblAbilityBlueprintLibrary::CreateAbilityContext(pAbility, m_SkillComp, GetOwner(), Sender);
+			m_SkillComp->ActivateAbility(pContext);
+		}
+		});
+}
+
+void AThirdPersonCharacter::StopSkill(EAblAbilityTaskResult reason)
+{
+	UAblAbility* pCurAbility = m_SkillComp->GetActiveAbility();
+	if (pCurAbility != nullptr)
+	{
+		m_SkillComp->CancelAbility(pCurAbility, reason);
+	}
 }
