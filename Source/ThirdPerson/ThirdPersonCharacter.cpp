@@ -273,7 +273,10 @@ void AThirdPersonCharacter::PlaySkill(const FString& filePath, AActor* Sender, b
 		}
 
 		UBlueprintGeneratedClass* Bp = Cast<UBlueprintGeneratedClass>(pObj);
-		UAblAbility* pAbility = NewObject<UAblAbility>(this, Bp);
+
+		//使用Bp->GetDefaultObject获取UAblAbility，解决在DS下，客户端退出DS的BUG
+		UAblAbility* pAbility = Bp->GetDefaultObject<UAblAbility>();
+
 		if (Sender == nullptr)
 		{
 			UAblAbilityContext* pContext = UAblAbilityBlueprintLibrary::CreateAbilityContext(pAbility, m_SkillComp, GetOwner(), GetOwner());
