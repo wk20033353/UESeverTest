@@ -94,7 +94,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Skill")
 		void PlaySkill(const FString& filePath, AActor* Sender = nullptr, bool bPlayImmediately = true);
 	UFUNCTION(BlueprintCallable, Category = "Skill")
-	void StopSkill(EAblAbilityTaskResult reason);
+		void StopSkill(EAblAbilityTaskResult reason);
+
+	UFUNCTION(BlueprintCallable, Category = "IK")
+		void ClacIK(float deltaSecs);
+	UFUNCTION(BlueprintCallable, Category = "IK")
+		bool SweapCollisionTrace(AActor* pActor, const FVector& start, const FVector& end, FHitResult& Hit);
 
 protected:
 	/** RepNotify，用于同步对当前生命值所做的更改。*/
@@ -142,5 +147,36 @@ protected:
 
 	/** 技能组件 */
 	UAblAbilityComponent* m_SkillComp;
+
+	/** IK */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AnimationIK", AdvancedDisplay)
+		bool m_RightFootHit;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AnimationIK", AdvancedDisplay)
+		FRotator m_RightFootRotOffset;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AnimationIK", AdvancedDisplay)
+		float m_RightFootZOffset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AnimationIK", AdvancedDisplay)
+		bool m_LeftFootHit;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AnimationIK", AdvancedDisplay)
+		FRotator m_LeftFootRotOffset;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AnimationIK", AdvancedDisplay)
+		float m_LeftFootZOffset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AnimationIK", AdvancedDisplay)
+		float m_PelvisZOffset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AnimationIK", AdvancedDisplay)
+		float m_FootRollMin = -30.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AnimationIK", AdvancedDisplay)
+		float m_FootRollMax = 30.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AnimationIK", AdvancedDisplay)
+		float m_FootPitchMin = -30.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AnimationIK", AdvancedDisplay)
+		float m_FootPitchMax = 30.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AnimationIK", AdvancedDisplay)
+		float m_FootZMin = -30.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AnimationIK", AdvancedDisplay)
+		float m_FootZMax = 20.0f;
 };
 

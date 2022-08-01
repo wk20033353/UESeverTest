@@ -14,6 +14,9 @@
 #include "Utiltiy/GAssetManager.h"
 #include "AbleCore/Classes/ablAbility.h"
 #include "AbleCore/Classes/ablAbilityBlueprintLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
+
+float const Rad2Deg = 57.29578f;
 
 //////////////////////////////////////////////////////////////////////////
 // AThirdPersonCharacter
@@ -297,4 +300,119 @@ void AThirdPersonCharacter::StopSkill(EAblAbilityTaskResult reason)
 	{
 		m_SkillComp->CancelAbility(pCurAbility, reason);
 	}
+}
+
+
+void AThirdPersonCharacter::ClacIK(float deltaSecs)
+{
+	USkeletalMeshComponent* RootMeshComponent = GetMesh();
+	if (!RootMeshComponent)
+	{
+		return;
+	}
+
+	FName footLName = "foot_l";
+	if (!RootMeshComponent->DoesSocketExist(footLName))
+	{
+		return;
+	}
+
+	FName footRName = "foot_r";
+	if (!RootMeshComponent->DoesSocketExist(footRName))
+	{
+		return;
+	}
+
+	FVector curLocation = RootMeshComponent->GetComponentLocation();
+	FVector footLLocation = RootMeshComponent->GetSocketLocation(footLName);
+	FVector footRLocation = RootMeshComponent->GetSocketLocation(footRName);
+
+	float targetLeftZOffset = 0;
+	float targetRightZOffset = 0;
+	float targetZOffset = 0;
+	{
+		FVector start(footLLocation.X, footLLocation.Y, curLocation.Z + 50.0f);
+		FVector end(footLLocation.X, footLLocation.Y, curLocation.Z - 75.0f);
+
+		FHitResult Hit;
+		if (SweapCollisionTrace(GetOwner(), start, end, Hit))
+		{
+			m_LeftFootHit = true;
+			FVector Normal = Hit.Normal;
+
+			float Roll = FMath::Atan2(Normal.Y, Normal.Z) * Rad2Deg;
+			Roll = FMath::Clamp(Roll, m_FootRollMin, m_FootRollMax);
+			float Pitch = FMath::Atan2(Normal.X, Normal.Z) * Rad2Deg;
+			Pitch = -1.0f * FMath::Clamp(Pitch, m_FootPitchMin, m_FootPitchMax);
+			m_LeftFootRotOffset = FRotator(Pitch, 0.0f, Roll);
+
+			float ZOffset = Hit.Location.Z - curLocation.Z;
+			targetLeftZOffset = FMath::Clamp(ZOffset, m_FootZMin, m_FootZMax);
+		}
+		else
+		{
+			m_LeftFootHit = false;
+			m_LeftFootRotOffset = FRotator(0.0f, 0.0f, 0.0f);
+			targetLeftZOffset = 0.0f;
+		}
+	}
+
+	{
+		FVector start(footRLocation.X, footRLocation.Y, curLocation.Z + 50.0f);
+		FVector end(footRLocation.X, footRLocation.Y, curLocation.Z - 75.0f);
+
+		FHitResult Hit;
+		if (SweapCollisionTrace(GetOwner(), start, end, Hit))
+		{
+			m_LeftFootHit = true;
+			FVector Normal = Hit.Normal;
+
+			float Roll = FMath::Atan2(Normal.Y, Normal.Z) * Rad2Deg;
+			Roll = FMath::Clamp(Roll, m_FootRollMin, m_FootRollMax);
+			float Pitch = FMath::Atan2(Normal.X, Normal.Z) * Rad2Deg;
+			Pitch = -1.0f * FMath::Clamp(Pitch, m_FootPitchMin, m_FootPitchMax);
+			m_RightFootRotOffset = FRotator(Pitch, 0.0f, Roll);
+
+			float ZOffset = Hit.Location.Z - curLocation.Z;
+			targetRightZOffset = FMath::Clamp(ZOffset, m_FootZMin, m_FootZMax);
+		}
+		else
+		{
+			m_RightFootHit = false;
+			m_RightFootRotOffset = FRotator(0.0f, 0.0f, 0.0f);
+			targetRightZOffset = 0.0f;
+		}
+	}
+
+	targetZOffset = FMath::Min(targetRightZOffset, targetLeftZOffset);
+	if (targetLeftZOffset < targetRightZOffset)
+	{
+		targetRightZOffset -= targetLeftZOffset;
+		targetLeftZOffset = 0.0f;
+	}
+	else
+	{
+		targetLeftZOffset -= targetRightZOffset;
+		targetRightZOffset = 0.0f;
+	}
+
+	m_LeftFootZOffset = UKismetMathLibrary::FInterpTo(m_LeftFootZOffset, targetLeftZOffset, deltaSecs, 3.0f);
+	m_RightFootZOffset = UKismetMathLibrary::FInterpTo(m_RightFootZOffset, targetRightZOffset, deltaSecs, 3.0f);
+	m_PelvisZOffset = UKismetMathLibrary::FInterpTo(m_PelvisZOffset, targetZOffset, deltaSecs, 3.0f);
+}
+
+bool AThirdPersonCharacter::SweapCollisionTrace(AActor* pActor, const FVector& start, const FVector& end, FHitResult& Hit)
+{
+	FCollisionShape shape = FCollisionShape();
+	FCollisionResponseParams& ResponseParam = FCollisionResponseParams::DefaultResponseParam;
+
+	FCollisionQueryParams queryParams = FCollisionQueryParams(SCENE_QUERY_STAT(EngineWrapper), true);
+	queryParams.AddIgnoredActor(pActor);
+
+
+	bool bHit = GWorld->LineTraceSingleByChannel(Hit, start, end, ECollisionChannel::ECC_Visibility, queryParams, ResponseParam);
+
+	//GDrawDebugLineTraceSingle(GWorld, start, end, EDrawDebugTrace::ForOneFrame, bHit, Hit, FLinearColor::Red, FLinearColor::Green, 5.0f);
+
+	return bHit;
 }
