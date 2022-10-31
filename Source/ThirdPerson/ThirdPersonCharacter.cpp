@@ -15,9 +15,10 @@
 #include "AbleCore/Classes/ablAbility.h"
 #include "AbleCore/Classes/ablAbilityBlueprintLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "GInterActiveComponent.h"
 
 float const Rad2Deg = 57.29578f;
-
+static int64 g_GuidVal = 0;
 //////////////////////////////////////////////////////////////////////////
 // AThirdPersonCharacter
 
@@ -67,6 +68,14 @@ AThirdPersonCharacter::AThirdPersonCharacter()
 	//初始化射速
 	FireRate = 0.25f;
 	bIsFiringWeapon = false;
+
+	//服务器特定的功能
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		Guid = ++g_GuidVal;
+
+		UE_LOG(LogTemp, Warning, TEXT("AThirdPersonCharacter InitGuid %lld"), Guid);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -75,6 +84,7 @@ void AThirdPersonCharacter::GetLifetimeReplicatedProps(TArray <FLifetimeProperty
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME_CONDITION(AThirdPersonCharacter, Guid, COND_InitialOnly);
 	//复制当前生命值。
 	DOREPLIFETIME(AThirdPersonCharacter, CurrentHealth);
 }
@@ -174,6 +184,13 @@ void AThirdPersonCharacter::MoveRight(float Value)
 		AddMovementInput(Direction, Value);
 	}
 }
+
+//
+void AThirdPersonCharacter::OnRep_Guid()
+{
+	UE_LOG(LogTemp, Error, TEXT("AThirdPersonCharacter::OnRep_Guid %lld!!!"), Guid);
+}
+
 
 void AThirdPersonCharacter::OnRep_CurrentHealth()
 {
@@ -415,4 +432,56 @@ bool AThirdPersonCharacter::SweapCollisionTrace(AActor* pActor, const FVector& s
 	//GDrawDebugLineTraceSingle(GWorld, start, end, EDrawDebugTrace::ForOneFrame, bHit, Hit, FLinearColor::Red, FLinearColor::Green, 5.0f);
 
 	return bHit;
+}
+
+void AThirdPersonCharacter::HandleInteractive_Implementation(UGInterActiveComponent* target, bool bStart)
+{
+	if (target == nullptr)
+	{
+		return;
+	}
+
+	if (bStart)
+	{
+		if (!target->CanInteractive(this))
+		{
+			return;
+		}
+
+		//服务器特定的功能
+		if (GetLocalRole() == ROLE_Authority)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UGInterActiveComponent::BeginInteractive Do Server"));
+			target->SetInteractGuid(this->GetGuid());
+		}
+	}
+	else
+	{
+		//服务器特定的功能
+		if (GetLocalRole() == ROLE_Authority)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UGInterActiveComponent::EndInteractive Do Server"));
+			target->SetInteractGuid(0);
+		}
+	}
+}
+
+int32 AThirdPersonCharacter::TryCrash()
+{
+	TArray<int32> Data;
+	Data.Add(1);
+	Data.Add(2);
+
+	int32 ret = Data[1] + Data[2];
+	return ret;
+}
+
+int32 AThirdPersonCharacter::TryCheck()
+{
+	TArray<int32> Data;
+	Data.Add(1);
+	Data.Add(2);
+
+	check(Data.Num() > 2);
+	return Data[0];
 }

@@ -7,6 +7,8 @@
 #include "AbleCore/Classes/ablAbilityComponent.h"
 #include "ThirdPersonCharacter.generated.h"
 
+class UGInterActiveComponent;
+
 UCLASS(config=Game)
 class THIRDPERSON_API AThirdPersonCharacter : public ACharacter
 {
@@ -75,6 +77,9 @@ public:
 
 
 public:
+	/** 玩家的唯一标识 */
+	int64 GetGuid() { return Guid; };
+
 	/** 最大生命值的取值函数。*/
 	UFUNCTION(BlueprintPure, Category = "Health")
 		FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
@@ -101,7 +106,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "IK")
 		bool SweapCollisionTrace(AActor* pActor, const FVector& start, const FVector& end, FHitResult& Hit);
 
+	/** 处理交互逻辑 */
+	UFUNCTION(Server, Reliable)
+		void HandleInteractive(UGInterActiveComponent* target, bool bStart);
+
+	/** 崩溃测试 */
+	UFUNCTION(BlueprintCallable, Category = "Crash")
+		int32 TryCrash();
+
+	UFUNCTION(BlueprintCallable, Category = "Crash")
+		int32 TryCheck();
+
 protected:
+	/** RepNotify，用于同步Guid */
+	UFUNCTION()
+		void OnRep_Guid();
+
 	/** RepNotify，用于同步对当前生命值所做的更改。*/
 	UFUNCTION()
 		void OnRep_CurrentHealth();
@@ -123,6 +143,10 @@ protected:
 		void HandleFire();
 
 protected:
+	/** 玩家的唯一标识 */
+	UPROPERTY(ReplicatedUsing = OnRep_Guid)
+		int64 Guid;
+
 	/** 玩家的最大生命值。这是玩家的最高生命值，也是出生时的生命值。*/
 	UPROPERTY(EditDefaultsOnly, Category = "Health")
 		float MaxHealth;
