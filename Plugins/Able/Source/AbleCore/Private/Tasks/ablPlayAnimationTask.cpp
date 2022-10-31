@@ -82,6 +82,7 @@ void UAblPlayAnimationTask::OnTaskStart(const TWeakObjectPtr<const UAblAbilityCo
 
 	float BasePlayRate = ABL_GET_DYNAMIC_PROPERTY_VALUE(Context, m_PlayRate);
 	float PlayRate = BasePlayRate * (m_ScaleWithAbilityPlayRate ? Context->GetAbility()->GetPlayRate(Context.Get()) : 1.0f);
+	FName MontageSection = ABL_GET_DYNAMIC_PROPERTY_VALUE(Context, m_AnimationMontageSection);
 
 	for (TWeakObjectPtr<AActor>& Target : TargetArray)
 	{
@@ -89,7 +90,7 @@ void UAblPlayAnimationTask::OnTaskStart(const TWeakObjectPtr<const UAblAbilityCo
 		{
 			if (USkeletalMeshComponent* PreferredComponent = Context->GetAbility()->GetSkeletalMeshComponentForActor(Context.Get(), Target.Get(), m_EventName))
 			{
-				PlayAnimation(Context, AnimationAsset, m_AnimationMontageSection, *Target.Get(), *ScratchPad, *PreferredComponent, PlayRate);
+				PlayAnimation(Context, AnimationAsset, MontageSection, *Target.Get(), *ScratchPad, *PreferredComponent, PlayRate);
 			}
 			else
 			{
@@ -97,7 +98,7 @@ void UAblPlayAnimationTask::OnTaskStart(const TWeakObjectPtr<const UAblAbilityCo
 
 				for (UActorComponent* SkeletalComponent : InSkeletalComponents)
 				{
-					PlayAnimation(Context, AnimationAsset, m_AnimationMontageSection, *Target.Get(), *ScratchPad, *Cast<USkeletalMeshComponent>(SkeletalComponent), PlayRate);
+					PlayAnimation(Context, AnimationAsset, MontageSection, *Target.Get(), *ScratchPad, *Cast<USkeletalMeshComponent>(SkeletalComponent), PlayRate);
 				}
 			}
 		}
@@ -131,7 +132,7 @@ void UAblPlayAnimationTask::OnTaskEnd(const TWeakObjectPtr<const UAblAbilityCont
 			{
 			case EAblPlayAnimationTaskAnimMode::AbilityAnimationNode:
 			{
-				if (FAnimNode_AbilityAnimPlayer* AnimPlayer = GetAbilityAnimGraphNode(SkeletalComponent.Get()))
+				if (FAnimNode_AbilityAnimPlayer* AnimPlayer = GetAbilityAnimGraphNode(Context, SkeletalComponent.Get()))
 				{
 					AnimPlayer->OnAbilityInterrupted(m_ClearQueuedAnimationOnInterrupt);
 				}
@@ -141,9 +142,10 @@ void UAblPlayAnimationTask::OnTaskEnd(const TWeakObjectPtr<const UAblAbilityCont
 			{
 				if (UAnimInstance* Instance = SkeletalComponent->GetAnimInstance())
 				{
-					if (m_OnEndAnimationMontageSection != NAME_None)
+					FName MontageOnEnd = ABL_GET_DYNAMIC_PROPERTY_VALUE(Context, m_OnEndAnimationMontageSection);
+					if (MontageOnEnd != NAME_None)
 					{
-						Instance->Montage_JumpToSection(m_OnEndAnimationMontageSection);
+						Instance->Montage_JumpToSection(MontageOnEnd);
 					}
 					else
 					{
@@ -215,7 +217,7 @@ float UAblPlayAnimationTask::GetEndTime() const
 
 UAblAbilityTaskScratchPad* UAblPlayAnimationTask::CreateScratchPad(const TWeakObjectPtr<UAblAbilityContext>& Context) const
 {
-	if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+	if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 	{
 		static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblPlayAnimationTaskScratchPad::StaticClass();
 		return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);
@@ -314,7 +316,7 @@ void UAblPlayAnimationTask::PlayAnimation(const TWeakObjectPtr<const UAblAbility
 				const UAnimSequence* AnimationSequence = Cast<UAnimSequence>(AnimationAsset);
 				if (AnimationSequence)
 				{
-					if (FAnimNode_AbilityAnimPlayer* AbilityPlayerNode = GetAbilityAnimGraphNode(&SkeletalMeshComponent))
+					if (FAnimNode_AbilityAnimPlayer* AbilityPlayerNode = GetAbilityAnimGraphNode(Context, &SkeletalMeshComponent))
 					{
 #if !(UE_BUILD_SHIPPING)
 						if (IsVerbose())
@@ -355,6 +357,7 @@ void UAblPlayAnimationTask::PlayAnimation(const TWeakObjectPtr<const UAblAbility
 				float StartMontageAt = ABL_GET_DYNAMIC_PROPERTY_VALUE(Context, m_TimeToStartMontageAt);
 				float BlendOutTimeAt = ABL_GET_DYNAMIC_PROPERTY_VALUE(Context, m_BlendOutTriggerTime);
 				int32 NumLoops = ABL_GET_DYNAMIC_PROPERTY_VALUE(Context, m_NumberOfLoops);
+				FName SlotName = ABL_GET_DYNAMIC_PROPERTY_VALUE(Context, m_SlotName);
 
 				if (const UAnimMontage* MontageAsset = Cast<UAnimMontage>(AnimationAsset))
 				{
@@ -371,11 +374,11 @@ void UAblPlayAnimationTask::PlayAnimation(const TWeakObjectPtr<const UAblAbility
 #if !(UE_BUILD_SHIPPING)
 					if (IsVerbose())
 					{
-						PrintVerbose(Context, FString::Printf(TEXT("Playing Slot Animation %s on Target %s on Slot %s using Dynamic Montage"), *SequenceAsset->GetName(), *TargetActor.GetName(), *m_SlotName.ToString()));
+						PrintVerbose(Context, FString::Printf(TEXT("Playing Slot Animation %s on Target %s on Slot %s using Dynamic Montage"), *SequenceAsset->GetName(), *TargetActor.GetName(), *SlotName.ToString()));
 					}
 #endif
 					FAblBlendTimes DynamicMontageBlend = ABL_GET_DYNAMIC_PROPERTY_VALUE(Context, m_DynamicMontageBlend);
-					Instance->PlaySlotAnimationAsDynamicMontage(const_cast<UAnimSequenceBase*>(SequenceAsset), m_SlotName, DynamicMontageBlend.m_BlendIn, DynamicMontageBlend.m_BlendOut, PlayRate, NumLoops, BlendOutTimeAt, StartMontageAt);
+					Instance->PlaySlotAnimationAsDynamicMontage(const_cast<UAnimSequenceBase*>(SequenceAsset), SlotName, DynamicMontageBlend.m_BlendIn, DynamicMontageBlend.m_BlendOut, PlayRate, NumLoops, BlendOutTimeAt, StartMontageAt);
 				}
 			}
 		}
@@ -393,13 +396,15 @@ void UAblPlayAnimationTask::PlayAnimation(const TWeakObjectPtr<const UAblAbility
 	}
 }
 
-FAnimNode_AbilityAnimPlayer* UAblPlayAnimationTask::GetAbilityAnimGraphNode(USkeletalMeshComponent* MeshComponent) const
+FAnimNode_AbilityAnimPlayer* UAblPlayAnimationTask::GetAbilityAnimGraphNode(const TWeakObjectPtr<const UAblAbilityContext>& Context, USkeletalMeshComponent* MeshComponent) const
 {
 	if (UAnimInstance* Instance = MeshComponent->GetAnimInstance())
 	{
 		FAnimInstanceProxy InstanceProxy(Instance);
+		FName StateMachineName = ABL_GET_DYNAMIC_PROPERTY_VALUE(Context, m_StateMachineName);
+		FName AbilityStateName = ABL_GET_DYNAMIC_PROPERTY_VALUE(Context, m_AbilityStateName);
 
-		FAnimNode_StateMachine* StateMachineNode = InstanceProxy.GetStateMachineInstanceFromName(m_StateMachineName);
+		const FAnimNode_StateMachine* StateMachineNode = InstanceProxy.GetStateMachineInstanceFromName(StateMachineName);
 		if (StateMachineNode)
 		{
 			const FBakedAnimationStateMachine* BakedStateMachine = InstanceProxy.GetMachineDescription(InstanceProxy.GetAnimClassInterface(), StateMachineNode);
@@ -408,7 +413,7 @@ FAnimNode_AbilityAnimPlayer* UAblPlayAnimationTask::GetAbilityAnimGraphNode(USke
 			{
 				for (const FBakedAnimationState& State : BakedStateMachine->States)
 				{
-					if (State.StateName == m_AbilityStateName)
+					if (State.StateName == AbilityStateName)
 					{
 						for (const int32& PlayerNodeIndex : State.PlayerNodeIndices)
 						{
@@ -439,7 +444,7 @@ void UAblPlayAnimationTask::OnAbilityTimeSet(const TWeakObjectPtr<const UAblAbil
 		// Reset any Single Node instances that were previous AnimBlueprint mode.
 		for (TWeakObjectPtr<USkeletalMeshComponent>& SkeletalComponent : ScratchPad->SingleNodeSkeletalComponents)
 		{
-			if (FAnimNode_AbilityAnimPlayer* AbilityNode = GetAbilityAnimGraphNode(SkeletalComponent.Get()))
+			if (FAnimNode_AbilityAnimPlayer* AbilityNode = GetAbilityAnimGraphNode(Context, SkeletalComponent.Get()))
 			{
 				AbilityNode->SetAnimationTime(Context->GetCurrentTime() - GetStartTime());
 			}
@@ -455,13 +460,14 @@ void UAblPlayAnimationTask::OnAbilityTimeSet(const TWeakObjectPtr<const UAblAbil
                 {
                     if (m_AnimationMontageSection != NAME_None)
                     {
+						FName MontageName = ABL_GET_DYNAMIC_PROPERTY_VALUE(Context, m_AnimationMontageSection);
                         FAnimMontageInstance* MontageInstance = Instance->GetActiveInstanceForMontage(MontageAsset);
                         if (MontageInstance)
                         {
                             bool const bEndOfSection = (MontageInstance->GetPlayRate() < 0.f);
-                            if (MontageInstance->JumpToSectionName(m_AnimationMontageSection, bEndOfSection))
+                            if (MontageInstance->JumpToSectionName(MontageName, bEndOfSection))
                             {
-                                const int32 SectionID = MontageAsset->GetSectionIndex(m_AnimationMontageSection);
+								const int32 SectionID = MontageAsset->GetSectionIndex(MontageName);
 
                                 if (MontageAsset->IsValidSectionIndex(SectionID))
                                 {
@@ -503,6 +509,11 @@ void UAblPlayAnimationTask::BindDynamicDelegates(UAblAbility* Ability)
 	ABL_BIND_DYNAMIC_PROPERTY(Ability, m_BlendOutTriggerTime, TEXT("Blend Out Trigger Time"));
 	ABL_BIND_DYNAMIC_PROPERTY(Ability, m_NumberOfLoops, TEXT("Number Of Loops"));
 	ABL_BIND_DYNAMIC_PROPERTY(Ability, m_StopAllMontages, TEXT("Stop All Montages"));
+	ABL_BIND_DYNAMIC_PROPERTY(Ability, m_SlotName, TEXT("Slot Name"));
+	ABL_BIND_DYNAMIC_PROPERTY(Ability, m_StateMachineName, TEXT("State Machine Name"));
+	ABL_BIND_DYNAMIC_PROPERTY(Ability, m_AbilityStateName, TEXT("Ability State Name"));
+	ABL_BIND_DYNAMIC_PROPERTY(Ability, m_AnimationMontageSection, TEXT("Montage Section"));
+	ABL_BIND_DYNAMIC_PROPERTY(Ability, m_OnEndAnimationMontageSection, TEXT("Montage Section on End"));
 }
 
 #if WITH_EDITOR

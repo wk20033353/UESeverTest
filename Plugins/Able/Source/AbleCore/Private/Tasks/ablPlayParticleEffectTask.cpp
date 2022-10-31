@@ -246,7 +246,7 @@ UAblAbilityTaskScratchPad* UAblPlayParticleEffectTask::CreateScratchPad(const TW
 {
 	if (m_DestroyAtEnd)
 	{
-		if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+		if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 		{
 			static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblPlayParticleEffectTaskScratchPad::StaticClass();
 			return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

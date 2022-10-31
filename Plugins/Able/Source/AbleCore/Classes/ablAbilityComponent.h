@@ -34,7 +34,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnAbilityInterrupt, const UAblAbilityContex
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAbilityBranched, const UAblAbilityContext& /*Context*/);
 
 /* Helper struct to keep track of Cooldowns. */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FAblAbilityCooldown
 {
 	GENERATED_USTRUCT_BODY()
@@ -59,19 +59,21 @@ public:
 
 	/* Sets the Cooldown. */
 	void SetCooldownTime(float time) { CooldownTime = time; }
-private:
+protected:
 	/* The Ability for this Cooldown.*/
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "Cooldown")
 	const UAblAbility* Ability;
 
 	/* The Context for this Cooldown.*/
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "Cooldown")
 	const UAblAbilityContext* Context;
 	
 	/* Current Time on the Cooldown.*/
+	UPROPERTY(BlueprintReadOnly, Category = "Cooldown")
 	float CurrentTime;
 
 	/* Total Cooldown time. */
+	UPROPERTY(BlueprintReadOnly, Category = "Cooldown")
 	float CooldownTime;
 };
 
@@ -98,7 +100,7 @@ private:
 	EAblAbilityTaskResult ResultToUse;
 };
 
-UCLASS(ClassGroup = Able, hidecategories = (Internal, Activation, Collision), meta = (BlueprintSpawnableComponent, DisplayName = "Ability Component", ShortToolTip = "A component for playing active and passive abilities."))
+UCLASS(ClassGroup = Able, hidecategories = (Internal, Activation, Collision), Blueprintable, meta = (BlueprintSpawnableComponent, DisplayName = "Ability Component", ShortToolTip = "A component for playing active and passive abilities."))
 class ABLECORE_API UAblAbilityComponent : public UActorComponent, public IGameplayTagAssetInterface
 {
 	GENERATED_BODY()
@@ -539,7 +541,7 @@ protected:
 	////
 
 	/* Checks if this Component still needs to Tick each frame. */
-	void CheckNeedsTick();
+	virtual void CheckNeedsTick();
 
 	/* Returns true if the Component is in the middle of an update. */
 	bool IsProcessingUpdate() const { return m_IsProcessingUpdate; }

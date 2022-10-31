@@ -18,6 +18,10 @@
 #define BOX_PLUGIN_BRUSH( RelativePath, ... ) FSlateBoxBrush( FAbleStyle::InContent( RelativePath, ".png" ), __VA_ARGS__ )
 #define DEFAULT_FONT(...) FCoreStyle::GetDefaultFontStyle(__VA_ARGS__)
 
+#define IMAGE_PLUGIN_BRUSH_SVG( RelativePath, ... ) FSlateVectorImageBrush(FAbleStyle::InContent(RelativePath, ".svg"), __VA_ARGS__)
+#define BOX_PLUGIN_BRUSH_SVG( RelativePath, ... ) FSlateVectorBoxBrush(FAbleStyle::InContent(RelativePath, ".svg"), __VA_ARGS__)
+#define BORDER_PLUGIN_BRUSH_SVG( RelativePath, ... ) FSlateVectorBorderBrush(FAbleStyle::InContent(RelativePath, ".svg"), __VA_ARGS__)
+
 #define CORE_IMAGE_BRUSH( RelativePath, ... ) FSlateImageBrush( m_StyleSet->RootToCoreContentDir( RelativePath, TEXT(".png") ), __VA_ARGS__ )
 #define CORE_BOX_BRUSH( RelativePath, ... ) FSlateBoxBrush( m_StyleSet->RootToCoreContentDir( RelativePath, TEXT(".png") ), __VA_ARGS__ )
 #define CORE_BORDER_BRUSH( RelativePath, ... ) FSlateBorderBrush( m_StyleSet->RootToCoreContentDir( RelativePath, TEXT(".png") ), __VA_ARGS__ )
@@ -62,52 +66,39 @@ void FAbleStyle::Initialize()
 	m_StyleSet->Set("Able.AbilityEditor.TrackAlt", new BOX_PLUGIN_BRUSH("Brushes/LayerAltBar_Brush", FMargin(4.0f / 16.0f)));
 	m_StyleSet->Set("Able.AbilityEditor.ScrollBackground", new BOX_PLUGIN_BRUSH("Brushes/BackGround_Brush", FMargin(4.0f / 16.0f)));
 
-	m_StyleSet->Set("ClassIcon.AblAbility", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/AbilityIcon_40"), Icon40x40));
-	m_StyleSet->Set("ClassIcon.AblAbility.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/AbilityIcon_16"), Icon16x16));
-	m_StyleSet->Set("ClassIcon.AblAbilityBlueprint", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/AbilityIcon_40"), Icon40x40));
-	m_StyleSet->Set("ClassIcon.AblAbilityBlueprint.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/AbilityIcon_16"), Icon16x16));
+	m_StyleSet->Set("ClassIcon.AblAbility", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/Gear"), Icon16x16));
+	m_StyleSet->Set("ClassIcon.AblAbilityBlueprint", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/Gear"), Icon16x16));
 	m_StyleSet->Set("ClassIcon.AblCustomTask", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/CustomTask_40"), Icon40x40));
 	m_StyleSet->Set("ClassIcon.AblCustomTask.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/CustomTask_16"), Icon16x16));
 	m_StyleSet->Set("ClassIcon.AblCustomTaskScratchPad", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/CustomScratchPad_40"), Icon40x40));
 	m_StyleSet->Set("ClassIcon.AblCustomTaskScratchPad.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/CustomScratchPad_16"), Icon16x16));
-	m_StyleSet->Set("ClassThumbnail.AblAbility", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/AbilityIcon_40"), Icon40x40));
-	m_StyleSet->Set("ClassThumbnail.AblAbilityBlueprint", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/AbilityIcon_40"), Icon40x40));
+	m_StyleSet->Set("ClassThumbnail.AblAbility", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/Gear"), Icon16x16));
+	m_StyleSet->Set("ClassThumbnail.AblAbilityBlueprint", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/Gear"), Icon16x16));
 	m_StyleSet->Set("ClassThumbnail.AblCustomTask", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/CustomTask_40"), Icon40x40));
 	m_StyleSet->Set("ClassThumbnail.AblCustomTaskScratchPad", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/CustomScratchPad_40"), Icon40x40));
 
 	// Commands
-	m_StyleSet->Set("AblAbilityEditor.m_AddTask", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Add_40"), Icon40x40));
-	m_StyleSet->Set("AblAbilityEditor.m_AddTask.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Add_40"), Icon20x20));
-	m_StyleSet->Set("AblAbilityEditor.m_DuplicateTask", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Add_40"), Icon40x40));
-	m_StyleSet->Set("AblAbilityEditor.m_DuplicateTask.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Add_40"), Icon20x20));
+	m_StyleSet->Set("AblAbilityEditor.m_AddTask", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/Add"), Icon16x16));
+	m_StyleSet->Set("AblAbilityEditor.m_DuplicateTask", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/Add"), Icon16x16));
 	m_StyleSet->Set("AblAbilityEditor.m_RemoveTask", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/RemoveTask_40"), Icon40x40));
-	m_StyleSet->Set("AblAbilityEditor.m_RemoveTask.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/RemoveTask_40"), Icon20x20));
-	m_StyleSet->Set("AblAbilityEditor.m_Validate", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Check_40"), Icon40x40));
-	m_StyleSet->Set("AblAbilityEditor.m_Validate.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Check_40"), Icon20x20));
+	m_StyleSet->Set("AblAbilityEditor.m_Validate", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/Check"), Icon16x16));
 	m_StyleSet->Set("AblAbilityEditor.m_SetPreviewAsset", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/SetPreviewAsset_40"), Icon40x40));
 	m_StyleSet->Set("AblAbilityEditor.m_SetPreviewAsset.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/SetPreviewAsset_40"), Icon20x20));
-	m_StyleSet->Set("AblAbilityEditor.m_PlayAbility", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Play_40"), Icon40x40));
-	m_StyleSet->Set("AblAbilityEditor.m_PlayAbility.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Play_40"), Icon20x20));
-	m_StyleSet->Set("AblAbilityEditor.m_StopAbility", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Stop_40"), Icon40x40));
-	m_StyleSet->Set("AblAbilityEditor.m_StopAbility.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Stop_40"), Icon20x20));
-	m_StyleSet->Set("AblAbilityEditor.m_PauseAbility", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Pause_40"), Icon40x40));
-	m_StyleSet->Set("AblAbilityEditor.m_PauseAbility.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Pause_40"), Icon20x20));
-	m_StyleSet->Set("AblAbilityEditor.m_StepAbility", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_StepForward_40"), Icon40x40));
-	m_StyleSet->Set("AblAbilityEditor.m_StepAbility.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_StepForward_40"), Icon20x20));
-	m_StyleSet->Set("AblAbilityEditor.m_StepAbilityBackwards", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_StepBackwards_40"), Icon40x40));
-	m_StyleSet->Set("AblAbilityEditor.m_StepAbilityBackwards.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_StepBackwards_40"), Icon20x20));
-	m_StyleSet->Set("AblAbilityEditor.m_ResetPreviewAsset", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Refresh_40"), Icon40x40));
-	m_StyleSet->Set("AblAbilityEditor.m_ResetPreviewAsset.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Refresh_40"), Icon20x20));
-	m_StyleSet->Set("AblAbilityEditor.m_ToggleCost", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/ToggleCost_40"), Icon40x40));
-	m_StyleSet->Set("AblAbilityEditor.m_ToggleCost.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/ToggleCost_40"), Icon20x20));
-	m_StyleSet->Set("AblAbilityEditor.m_Resize", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Scale_40"), Icon40x40));
-	m_StyleSet->Set("AblAbilityEditor.m_Resize.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/NoBorder_Scale_40"), Icon20x20));
+	m_StyleSet->Set("AblAbilityEditor.m_PlayAbility", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/Play"), Icon16x16));
+	m_StyleSet->Set("AblAbilityEditor.m_StopAbility", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/Stop"), Icon16x16));
+	m_StyleSet->Set("AblAbilityEditor.m_PauseAbility", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/Pause"), Icon16x16));
+	m_StyleSet->Set("AblAbilityEditor.m_StepAbility", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/StepForwards"), Icon16x16));
+	m_StyleSet->Set("AblAbilityEditor.m_StepAbilityBackwards", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/StepBackwards"), Icon16x16));
+	m_StyleSet->Set("AblAbilityEditor.m_ResetPreviewAsset", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/Refresh"), Icon16x16));
+	//m_StyleSet->Set("AblAbilityEditor.m_ToggleCost", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/ToggleCost_40"), Icon40x40));
+	//m_StyleSet->Set("AblAbilityEditor.m_ToggleCost.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/ToggleCost_40"), Icon20x20));
+	m_StyleSet->Set("AblAbilityEditor.m_Resize", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/Scale"), Icon16x16));
 	m_StyleSet->Set("AblAbilityEditor.m_CaptureThumbnail", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/CaptureThumbnail_40"), Icon40x40));
 	m_StyleSet->Set("AblAbilityEditor.m_CaptureThumbnail.Small", new IMAGE_PLUGIN_BRUSH(TEXT("Icons/CaptureThumbnail_40"), Icon20x20));
-	m_StyleSet->Set("AblAbilityEditor.ResetButton", new IMAGE_PLUGIN_BRUSH("Icons/NoBorder_Refresh_40", Icon32x32));
-	m_StyleSet->Set("AblAbilityEditor.AddButton", new IMAGE_PLUGIN_BRUSH("Icons/NoBorder_Add_40", Icon32x32));
+	m_StyleSet->Set("AblAbilityEditor.ResetButton", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/Refresh"), Icon16x16));
+	m_StyleSet->Set("AblAbilityEditor.AddButton", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/Add"), Icon16x16));
 	// Tab Styles
-	m_StyleSet->Set("Able.Tabs.AbilityTimeline", new IMAGE_PLUGIN_BRUSH("Icons/AbilityIcon_16", Icon16x16));
+	m_StyleSet->Set("Able.Tabs.AbilityTimeline", new IMAGE_PLUGIN_BRUSH_SVG(TEXT("Icons/Gear"), Icon16x16));
 	m_StyleSet->Set("Able.Tabs.AbilityEditorSettings", new IMAGE_PLUGIN_BRUSH("Icons/EditorSettings_16", Icon16x16));
 	m_StyleSet->Set("Able.Tabs.AbilityAssetDetails", new IMAGE_PLUGIN_BRUSH("Icons/AbilityProperties_16", Icon16x16));
 	m_StyleSet->Set("Able.Tabs.AbilityTaskAssetDetails", new IMAGE_PLUGIN_BRUSH("Icons/TaskProperties_16", Icon16x16));

@@ -25,11 +25,8 @@ public:
 	bool DoModal();
 
 	/* Returns the Asset selected, if there was one. */
-	const TWeakObjectPtr<UObject>& GetPreviewAsset() const { return m_Asset; }
+	const FAssetData& GetSelectedAsset() const { return m_AssetSelected; }
 private:
-	/* Creates the Asset picker. */
-	void MakePicker();
-
 	/* Callback for when an Asset is selected by the user. */
 	void OnAssetSelected(const FAssetData& AssetData);
 
@@ -54,11 +51,8 @@ private:
 	/* A pointer to the window that is asking the user to select an asset.*/
 	TWeakPtr<SWindow> m_ModalWindow;
 
-	/* The container for the Asset picker */
-	TSharedPtr<SVerticalBox> m_AssetPickerContainer;
-
 	/* The selected asset */
-	TWeakObjectPtr<UObject> m_Asset;
+	FAssetData m_AssetSelected;
 
 	/* True if Ok was clicked */
 	bool m_bOkClicked;

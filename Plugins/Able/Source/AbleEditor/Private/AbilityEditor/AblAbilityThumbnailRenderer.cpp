@@ -39,19 +39,19 @@ void UAblAbilityThumbnailRenderer::Draw(UObject* Object, int32 X, int32 Y, uint3
 	{
 		if (Ability->ThumbnailImage)
 		{
-			if (!Ability->ThumbnailImage->Resource)
+			if (!Ability->ThumbnailImage->GetResource())
 			{
 				Ability->ThumbnailImage->UpdateResource();
 			}
 
-			if (Ability->ThumbnailImage->Resource)
+			if (const FTextureResource* ThumbnailResource = Ability->ThumbnailImage->GetResource())
 			{
-				Canvas->DrawTile(X, Y, Width, Height, 0.0f, 0.0f, 1.0f, 1.0f, FLinearColor::White, Ability->ThumbnailImage->Resource, false);
+				Canvas->DrawTile(X, Y, Width, Height, 0.0f, 0.0f, 1.0f, 1.0f, FLinearColor::White, ThumbnailResource, false);
 			}
 		}
-		else if (m_NoImage)
+		else if (m_NoImage && m_NoImage->GetResource())
 		{
-			Canvas->DrawTile(X, Y, Width, Height, 0.0f, 0.0f, 1.0f, 1.0f, FLinearColor::White, m_NoImage->Resource, false);
+			Canvas->DrawTile(X, Y, Width, Height, 0.0f, 0.0f, 1.0f, 1.0f, FLinearColor::White, m_NoImage->GetResource(), false);
 		}
 	}
 }

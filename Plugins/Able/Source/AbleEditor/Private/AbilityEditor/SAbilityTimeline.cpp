@@ -157,6 +157,18 @@ FReply SAblAbilityTimelinePanel::OnKeyDown(const FGeometry& MyGeometry, const FK
 	return FReply::Unhandled();
 }
 
+float SAblAbilityTimelinePanel::RoundFloat(float in, int32 numDecimalPoints) const
+{
+	if (numDecimalPoints == 0)
+	{
+		return (float)FMath::RoundToInt(in);
+	}
+	
+	float div = FMath::Pow(10.0f, (float)numDecimalPoints);
+	int32 FixedPoint = FMath::RoundToInt(in * div);
+	return (float)FixedPoint / div;
+}
+
 void SAblAbilityTimelinePanel::OnRefresh()
 {
 	m_CachedTaskSize = 0;
@@ -247,7 +259,7 @@ TSharedRef<SWidget> SAblAbilityTimelinePanel::BuildTimelineControls()
 			.ContentPadding(2.0f)
 			[
 				SNew(SImage)
-				.Image(FAbleStyle::GetBrush("AblAbilityEditor.m_StepAbilityBackwards.Small"))
+				.Image(FAbleStyle::GetBrush("AblAbilityEditor.m_StepAbilityBackwards"))
 			]
 		]
 		+ SHorizontalBox::Slot()
@@ -262,7 +274,7 @@ TSharedRef<SWidget> SAblAbilityTimelinePanel::BuildTimelineControls()
 			.ContentPadding(2.0f)
 			[
 				SNew(SImage)
-				.Image(FAbleStyle::GetBrush("AblAbilityEditor.m_StopAbility.Small"))
+				.Image(FAbleStyle::GetBrush("AblAbilityEditor.m_StopAbility"))
 			]
 		]
 		+ SHorizontalBox::Slot()
@@ -292,7 +304,7 @@ TSharedRef<SWidget> SAblAbilityTimelinePanel::BuildTimelineControls()
 			.ContentPadding(2.0f)
 			[
 				SNew(SImage)
-				.Image(FAbleStyle::GetBrush("AblAbilityEditor.m_StepAbility.Small"))
+				.Image(FAbleStyle::GetBrush("AblAbilityEditor.m_StepAbility"))
 			]
 		]
 
@@ -453,10 +465,10 @@ const FSlateBrush* SAblAbilityTimelinePanel::GetPlayPauseIcon() const
 {
 	if (m_AbilityEditor.IsValid() && m_AbilityEditor.Pin()->IsPlayingAbility())
 	{
-		return FAbleStyle::GetBrush("AblAbilityEditor.m_PauseAbility.Small");
+		return FAbleStyle::GetBrush("AblAbilityEditor.m_PauseAbility");
 	}
 
-	return FAbleStyle::GetBrush("AblAbilityEditor.m_PlayAbility.Small");
+	return FAbleStyle::GetBrush("AblAbilityEditor.m_PlayAbility");
 }
 
 FText SAblAbilityTimelinePanel::GetFramesTooltipText() const
@@ -492,7 +504,7 @@ TOptional<float> SAblAbilityTimelinePanel::GetTimeMin() const
 {
 	if (m_AbilityEditor.IsValid())
 	{
-		return m_AbilityEditor.Pin()->GetAbilityTimeRange().X;
+		return RoundFloat(m_AbilityEditor.Pin()->GetAbilityTimeRange().X, 3);
 	}
 
 	return 0.0f;
@@ -502,7 +514,8 @@ TOptional<float> SAblAbilityTimelinePanel::GetTimeMax() const
 {
 	if (m_AbilityEditor.IsValid())
 	{
-		return m_AbilityEditor.Pin()->GetAbilityTimeRange().Y;
+		
+		return RoundFloat(m_AbilityEditor.Pin()->GetAbilityTimeRange().Y, 3);
 	}
 
 	return 0.0f;
@@ -512,7 +525,7 @@ TOptional<float> SAblAbilityTimelinePanel::GetCurrentTime() const
 {
 	if (m_AbilityEditor.IsValid())
 	{
-		return m_AbilityEditor.Pin()->GetAbilityCurrentTime();
+		return RoundFloat(m_AbilityEditor.Pin()->GetAbilityCurrentTime(), 3);
 	}
 
 	return 0.0f;

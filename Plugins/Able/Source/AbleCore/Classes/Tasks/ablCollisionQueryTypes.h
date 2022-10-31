@@ -258,7 +258,7 @@ protected:
 	bool m_Is2DQuery;
 
 	/* 3D Slice acts similar to a cone, except it does not pinch in towards the origin, but is instead an equal height throughout the volume (like a slice of cake).*/
-	UPROPERTY(EditInstanceOnly, Category = "Targeting", meta = (DisplayName = "Use 3D Slice"))
+	UPROPERTY(EditInstanceOnly, Category = "Cone", meta = (DisplayName = "Use 3D Slice"))
 	bool m_3DSlice;
 };
 

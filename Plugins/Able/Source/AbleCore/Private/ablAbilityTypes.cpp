@@ -13,7 +13,8 @@ FAblAbilityTargetTypeLocation::FAblAbilityTargetTypeLocation()
 	m_Offset(ForceInitToZero),
 	m_Rotation(ForceInitToZero),
 	m_Socket(NAME_None),
-	m_UseSocketRotation(false)
+	m_UseSocketRotation(false),
+	m_UseActorRotation(false)
 {
 
 }
@@ -74,6 +75,11 @@ void FAblAbilityTargetTypeLocation::GetTargetTransform(const UAblAbilityContext&
 			{
 				OutTransform = TargetActor->GetActorTransform();
 			}
+		}
+
+		if (m_UseActorRotation)
+		{
+			OutTransform.SetRotation(TargetActor->GetActorQuat());
 		}
 
 		OutTransform.ConcatenateRotation(m_Rotation.Quaternion());
@@ -155,6 +161,11 @@ void FAblAbilityTargetTypeLocation::GetTransform(const UAblAbilityContext& Conte
 			}
 		}
 
+		if (m_UseActorRotation)
+		{
+			OutTransform.SetRotation(BaseActor->GetActorQuat());
+		}
+
 		OutTransform.ConcatenateRotation(m_Rotation.Quaternion());
 
 		FQuat Rotator = OutTransform.GetRotation();
@@ -204,4 +215,34 @@ AActor* FAblAbilityTargetTypeLocation::GetSourceActor(const UAblAbilityContext& 
 	}
 
 	return nullptr;
+}
+
+UAblDynamicPropertySupport::UAblDynamicPropertySupport(const FObjectInitializer& ObjectInitializer)
+: Super(ObjectInitializer)
+{
+
+}
+
+UAblDynamicPropertySupport::~UAblDynamicPropertySupport()
+{
+
+}
+
+FString UAblDynamicPropertySupport::GetDynamicPropertyParentIdentifier() const
+{
+	checkNoEntry();
+	return FString();
+}
+
+FName UAblDynamicPropertySupport::GetDynamicDelegateName(const FString& PropertyName) const
+{
+	const FString& DynamicIdentifier = GetDynamicPropertyIdentifier();
+	FString DelegateName = FString::Format(TEXT("OnGetDynamicProperty_%s_%s"), { GetDynamicPropertyParentIdentifier(), PropertyName });
+
+	if (!DynamicIdentifier.IsEmpty())
+	{
+		DelegateName = FString::Format(TEXT("%s_%s"), { DelegateName, DynamicIdentifier });
+	}
+
+	return FName(*DelegateName);
 }

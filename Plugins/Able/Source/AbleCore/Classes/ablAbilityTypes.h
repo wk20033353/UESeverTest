@@ -76,8 +76,12 @@ protected:
 	FName m_Socket;
 
 	/* If true, the Socket rotation will be used as well as its location.*/
-	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Location", meta = (DisplayName = "Use Socket Rotation"))
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Location", meta = (DisplayName = "Use Socket Rotation", EditCondition = "!m_UseActorRotation"))
 	bool m_UseSocketRotation;
+
+	/* If true, the Actor rotation will be used.*/
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Location", meta = (DisplayName = "Use Actor Rotation", EditCondition = "!m_UseSocketRotation"))
+	bool m_UseActorRotation;
 };
 
 UENUM(BlueprintType)
@@ -142,6 +146,26 @@ namespace UMAblAbility
 	};
 }
 
+UCLASS(Abstract)
+class ABLECORE_API UAblDynamicPropertySupport : public UObject
+{
+	GENERATED_BODY()
+public:
+	UAblDynamicPropertySupport(const FObjectInitializer& ObjectInitializer);
+	virtual ~UAblDynamicPropertySupport();
+
+	const FString& GetDynamicPropertyIdentifier() const { return m_DynamicPropertyIdentifer; }
+
+	virtual FString GetDynamicPropertyParentIdentifier() const;
+
+	/* Get Dynamic Delegate Name. */
+	virtual FName GetDynamicDelegateName(const FString& PropertyName) const;
+protected:
+	/* The Identifier applied to any Dynamic Property methods for this task. This can be used to differentiate multiple tasks of the same type from each other within the same Ability. */
+	UPROPERTY(EditInstanceOnly, Category = "Dynamic Properties", meta = (DisplayName = "Identifier"))
+	FString m_DynamicPropertyIdentifer;
+};
+
 
 DECLARE_DYNAMIC_DELEGATE_RetVal_TwoParams(UAnimationAsset*, FGetAblAnimation, const UAblAbilityContext*, Context, UAnimationAsset*, StaticValue);
 DECLARE_DYNAMIC_DELEGATE_RetVal_TwoParams(USoundBase*, FGetAblSound, const UAblAbilityContext*, Context, USoundBase*, StaticValue);
@@ -163,6 +187,7 @@ DECLARE_DYNAMIC_DELEGATE_RetVal_TwoParams(TSubclassOf<UMatineeCameraShake>, FGet
 DECLARE_DYNAMIC_DELEGATE_RetVal_TwoParams(EAblPlayCameraShakeStopMode, FGetCameraStopMode, const UAblAbilityContext*, Context, EAblPlayCameraShakeStopMode, StaticValue);
 DECLARE_DYNAMIC_DELEGATE_RetVal_TwoParams(TArray<FName>, FGetNameArray, const UAblAbilityContext*, Context, TArray<FName>, StaticValue);
 DECLARE_DYNAMIC_DELEGATE_RetVal_TwoParams(EAblAbilityTargetType, FGetAblTargetType, const UAblAbilityContext*, Context, EAblAbilityTargetType, StaticValue);
+DECLARE_DYNAMIC_DELEGATE_RetVal_TwoParams(FName, FGetAblName, const UAblAbilityContext*, Context, FName, StaticValue);
 
 // One offs
 DECLARE_DYNAMIC_DELEGATE_RetVal_ThreeParams(bool, FGetAblBoolWithResult, const UAblAbilityContext*, Context, bool, StaticValue, EAblAbilityTaskResult, Result);

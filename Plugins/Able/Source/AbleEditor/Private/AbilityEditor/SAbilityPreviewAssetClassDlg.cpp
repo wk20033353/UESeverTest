@@ -7,9 +7,12 @@
 #include "AbilityEditor/AblAbilityEditorSettings.h"
 #include "AbleStyle.h"
 #include "AssetRegistryModule.h"
-#include "Editor/ClassViewer/Public/ClassViewerModule.h"
+#include "ContentBrowserModule.h"
 #include "Editor.h"
 #include "EditorStyleSet.h"
+#include "Engine/Blueprint.h"
+#include "GameFramework/Pawn.h"
+#include "IContentBrowserSingleton.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SEditableTextBox.h"
@@ -24,6 +27,20 @@ void SAblAbilityPreviewAssetClassDlg::Construct(const FArguments& InArgs)
 	m_bOkClicked = false;
 	m_ModalWindow = nullptr;
 	m_Class = nullptr;
+
+	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
+
+	FAssetPickerConfig AssetPickerConfig;
+
+	AssetPickerConfig.Filter.ClassNames.Add(UBlueprint::StaticClass()->GetFName());
+	AssetPickerConfig.Filter.bRecursiveClasses = true;
+	AssetPickerConfig.SelectionMode = ESelectionMode::SingleToggle;
+	AssetPickerConfig.OnAssetSelected = FOnAssetSelected::CreateSP(this, &SAblAbilityPreviewAssetClassDlg::OnAssetSelected);
+	AssetPickerConfig.OnShouldFilterAsset = FOnShouldFilterAsset::CreateSP(this, &SAblAbilityPreviewAssetClassDlg::ShouldFilterAsset);
+	AssetPickerConfig.bAllowNullSelection = false;
+	AssetPickerConfig.ThumbnailLabel = EThumbnailLabel::ClassName;
+	AssetPickerConfig.InitialAssetViewType = EAssetViewType::List;
+	AssetPickerConfig.InitialAssetSelection = FAssetData();
 
 	ChildSlot
 		[
@@ -51,7 +68,7 @@ void SAblAbilityPreviewAssetClassDlg::Construct(const FArguments& InArgs)
 			[
 				SNew(STextBlock)
 				.AutoWrapText(true)
-				.Text(LOCTEXT("AblAbilitySelectPreviewAsset", "The Preview Asset is used as the actor to execute your Ability while in the editor.\n\nChoose a class below that you wish to select your Preview Asset from.\n\n(Warning: Choosing a class you have many assets of, e.g. Static Model, may cause lots of assets to be loaded and cause a hitch while UE loads those assets.)"))
+				.Text(LOCTEXT("AblAbilitySelectPreviewAsset", "The Preview Asset is used as the actor to execute your Ability while in the editor.\n\nChoose a Blueprint Asset to use, the asset must at least inherit from APawn."))
 			]
 
 			+ SVerticalBox::Slot()
@@ -61,7 +78,19 @@ void SAblAbilityPreviewAssetClassDlg::Construct(const FArguments& InArgs)
 				.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
 				.Content()
 				[
-					SAssignNew(m_ClassPickerContainer, SVerticalBox)
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(LOCTEXT("SelectPreviewAsset", "Select Asset:"))
+						.ShadowOffset(FVector2D(1.0f, 1.0f))
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						ContentBrowserModule.Get().CreateAssetPicker(AssetPickerConfig)
+					]
 				]
 			]
 
@@ -97,7 +126,7 @@ void SAblAbilityPreviewAssetClassDlg::Construct(const FArguments& InArgs)
 		]
 		];
 
-	MakePicker();
+	//MakePicker();
 }
 
 bool SAblAbilityPreviewAssetClassDlg::DoModal()
@@ -119,28 +148,46 @@ bool SAblAbilityPreviewAssetClassDlg::DoModal()
 
 void SAblAbilityPreviewAssetClassDlg::MakePicker()
 {
-	FClassViewerModule& ClassViewerModule = FModuleManager::Get().LoadModuleChecked<FClassViewerModule>(TEXT("ClassViewer"));
+	//FClassViewerModule& ClassViewerModule = FModuleManager::Get().LoadModuleChecked<FClassViewerModule>(TEXT("ClassViewer"));
 
-	// Configure filter for asset picker
-	FClassViewerInitializationOptions Config;
-	Config.DisplayMode = EClassViewerDisplayMode::TreeView;
+	//// Configure filter for asset picker
+	//FClassViewerInitializationOptions Config;
+	//Config.DisplayMode = EClassViewerDisplayMode::TreeView;
 
-	m_ClassPickerContainer->AddSlot()
-		.AutoHeight()
-		[
-			SNew(STextBlock)
-			.Text(LOCTEXT("SelectAnimationAsset", "Select Asset:"))
-		.ShadowOffset(FVector2D(1.0f, 1.0f))
-		];
-			m_ClassPickerContainer->AddSlot()
-		[
-			ClassViewerModule.CreateClassViewer(Config, FOnClassPicked::CreateSP(this, &SAblAbilityPreviewAssetClassDlg::OnClassSelected))
-		];
+	//m_ClassPickerContainer->AddSlot()
+	//	.AutoHeight()
+	//	[
+	//		SNew(STextBlock)
+	//		.Text(LOCTEXT("SelectAnimationAsset", "Select Asset:"))
+	//	.ShadowOffset(FVector2D(1.0f, 1.0f))
+	//	];
+	//		m_ClassPickerContainer->AddSlot()
+	//	[
+	//		ClassViewerModule.CreateClassViewer(Config, FOnClassPicked::CreateSP(this, &SAblAbilityPreviewAssetClassDlg::OnClassSelected))
+	//	];
 }
 
 void SAblAbilityPreviewAssetClassDlg::OnClassSelected(UClass* InClass)
 {
 	m_Class = InClass;
+}
+
+void SAblAbilityPreviewAssetClassDlg::OnAssetSelected(const FAssetData& Asset)
+{
+	m_AssetSelected = Asset;
+}
+
+bool SAblAbilityPreviewAssetClassDlg::ShouldFilterAsset(const FAssetData& Asset) const
+{
+	if (Asset.AssetClass == UBlueprint::StaticClass()->GetFName())
+	{
+		if (UBlueprint* LoadedBlueprint = Cast<UBlueprint>(Asset.GetAsset()))
+		{
+			return !(*(LoadedBlueprint->GeneratedClass) && LoadedBlueprint->GeneratedClass->IsChildOf(APawn::StaticClass()));
+		}
+	}
+	
+	return true;
 }
 
 FReply SAblAbilityPreviewAssetClassDlg::OkClicked()

@@ -10,6 +10,7 @@
 #include "AbilityEditor/AblAbilityEditorSettings.h"
 
 #include "GameFramework/Actor.h"
+#include "GameFramework/Pawn.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/SkeletalMesh.h"
 #include "Animation/AnimBlueprint.h"
@@ -17,13 +18,15 @@
 
 #include "AbleStyle.h"
 
+#include "Editor/Kismet/Public/BlueprintEditor.h"
 #include "WorkflowOrientedApp/SModeWidget.h"
 #include "WorkflowOrientedApp/SContentReference.h"
 
 #include "IDocumentation.h"
-
+#include "ClassIconFinder.h"
 #include "ContentBrowserModule.h"
 #include "EditorStyleSet.h"
+#include "IAssetFamily.h"
 #include "IContentBrowserSingleton.h"
 #include "Framework/Application/SlateApplication.h"
 
@@ -34,7 +37,6 @@
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 
 #include "Textures/SlateIcon.h"
-#include "Toolkits/AssetEditorManager.h"
 
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
@@ -49,6 +51,7 @@
 #include "Widgets/SOverlay.h"
 
 #include "Styling/SlateTypes.h"
+#include "Styling/ToolBarStyle.h"
 
 #include "Modules/ModuleManager.h"
 #include "AssetRegistryModule.h"
@@ -80,10 +83,14 @@ public:
 	// End of SWidget interface
 };
 
-void FAblAbilityEditorToolbar::SetupToolbar(TSharedPtr<FExtender> Extender, TSharedPtr<FAblAbilityEditor> InAbilityEditor)
+FAblAbilityEditorToolbar::FAblAbilityEditorToolbar(TSharedPtr<FAblAbilityEditor> InAbilityEditor)
+: m_AbilityEditor(InAbilityEditor.ToSharedRef())
 {
-	m_AbilityEditor = InAbilityEditor;
 
+}
+
+void FAblAbilityEditorToolbar::SetupToolbar(TSharedPtr<FExtender> Extender)
+{
 	Extender->AddToolBarExtension(
 		"Asset",
 		EExtensionHook::After,
@@ -100,39 +107,30 @@ void FAblAbilityEditorToolbar::SetupToolbar(TSharedPtr<FExtender> Extender, TSha
 
 bool FAblAbilityEditorToolbar::IsAssetValid(const FAssetData& Asset) const
 {
-	AActor* ActorAsset = Cast<AActor>(Asset.GetAsset());
-	if (!ActorAsset)
+	if (Asset.AssetClass == UBlueprint::StaticClass()->GetFName())
 	{
-		if (UBlueprint* Blueprint = Cast<UBlueprint>(Asset.GetAsset()))
+		if (UBlueprint* LoadedBlueprint = Cast<UBlueprint>(Asset.GetAsset()))
 		{
-			if (Blueprint->GeneratedClass)
-			{
-				ActorAsset = Cast<AActor>(Blueprint->GeneratedClass->GetDefaultObject());
-			}
+			return (*(LoadedBlueprint->GeneratedClass) && LoadedBlueprint->GeneratedClass->IsChildOf(APawn::StaticClass()));
 		}
 	}
 
-	if (!ActorAsset)
-	{
-		return false;
-	}
-
-	return true;
+	return false;
 }
 
 void FAblAbilityEditorToolbar::FillAbilityEditorModeToolbar(FToolBarBuilder& ToolbarBuilder)
 {
-	TSharedPtr<FAblAbilityEditor> AbilityEditor = m_AbilityEditor.Pin();
-	UBlueprint* BlueprintObj = AbilityEditor->GetBlueprintObj();
+	UBlueprint* BlueprintObj = m_AbilityEditor.Pin()->GetBlueprintObj();
 
 	const float ContentRefWidth = 80.0f;
 
 	FToolBarBuilder Builder(ToolbarBuilder.GetTopCommandList(), ToolbarBuilder.GetCustomization());
 
 	{
-		TAttribute<FName> GetActiveMode(AbilityEditor.ToSharedRef(), &FAblAbilityEditor::GetCurrentMode);
-		FOnModeChangeRequested SetActiveMode = FOnModeChangeRequested::CreateSP(AbilityEditor.ToSharedRef(), &FAblAbilityEditor::SetCurrentMode);
-
+		TSharedPtr<FAblAbilityEditor> AbilityEditor = m_AbilityEditor.Pin();
+		TSharedRef<FAblAbilityEditor> AbilityEditorRef = AbilityEditor.ToSharedRef();
+		TAttribute<FName> GetActiveMode(AbilityEditorRef, &FAblAbilityEditor::GetCurrentMode);
+		FOnModeChangeRequested SetActiveMode = FOnModeChangeRequested::CreateSP(AbilityEditorRef, &FAblAbilityEditor::SetCurrentMode);
 		// Left side padding
 		AbilityEditor->AddToolbarWidget(SNew(SSpacer).Size(FVector2D(4.0f, 1.0f)));
 
@@ -141,8 +139,8 @@ void FAblAbilityEditorToolbar::FillAbilityEditorModeToolbar(FToolBarBuilder& Too
 			.OnGetActiveMode(GetActiveMode)
 			.OnSetActiveMode(SetActiveMode)
 			.IconImage(FAbleStyle::GetBrush("AblAbilityEditor.TimelineMode"))
-			.SmallIconImage(FAbleStyle::GetBrush("AblAbilityEditor.TimelineMode.Small"))
-			.DirtyMarkerBrush(AbilityEditor.Get(), &FAblAbilityEditor::GetDirtyImageForMode, FAblAbilityEditorModes::AbilityTimelineMode)
+			//.SmallIconImage(FAbleStyle::GetBrush("AblAbilityEditor.TimelineMode.Small"))
+			.DirtyMarkerBrush(AbilityEditorRef, &FAblAbilityEditor::GetDirtyImageForMode, FAblAbilityEditorModes::AbilityTimelineMode)
 			.ToolTip(IDocumentation::Get()->CreateToolTip(
 				LOCTEXT("AbilityTimelineButtonTooltip", "Switch to timeline editing mode"),
 				NULL,
@@ -152,7 +150,7 @@ void FAblAbilityEditorToolbar::FillAbilityEditorModeToolbar(FToolBarBuilder& Too
 			.ShortContents()
 			[
 				SNew(SContentReference)
-				.AssetReference(AbilityEditor.ToSharedRef(), &FAblAbilityEditor::GetAbilityBlueprintAsObject)
+				.AssetReference(AbilityEditorRef, &FAblAbilityEditor::GetAbilityBlueprintAsObject)
 			.AllowSelectingNewAsset(false)
 			.AllowClearingReference(false)
 			.WidthOverride(ContentRefWidth)
@@ -166,8 +164,8 @@ void FAblAbilityEditorToolbar::FillAbilityEditorModeToolbar(FToolBarBuilder& Too
 			.OnGetActiveMode(GetActiveMode)
 			.OnSetActiveMode(SetActiveMode)
 			.IconImage(FAbleStyle::GetBrush("AblAbilityEditor.GraphMode"))
-			.SmallIconImage(FAbleStyle::GetBrush("AblAbilityEditor.GraphMode.Small"))
-			.DirtyMarkerBrush(AbilityEditor.Get(), &FAblAbilityEditor::GetDirtyImageForMode, FAblAbilityEditorModes::AbilityBlueprintMode)
+			//.SmallIconImage(FAbleStyle::GetBrush("AblAbilityEditor.GraphMode.Small"))
+			.DirtyMarkerBrush(AbilityEditorRef, &FAblAbilityEditor::GetDirtyImageForMode, FAblAbilityEditorModes::AbilityBlueprintMode)
 			.ToolTip(IDocumentation::Get()->CreateToolTip(
 				LOCTEXT("AbilityBlueprintButtonTooltip", "Switch to blueprint editing mode"),
 				NULL,
@@ -177,7 +175,7 @@ void FAblAbilityEditorToolbar::FillAbilityEditorModeToolbar(FToolBarBuilder& Too
 			.ShortContents()
 			[
 				SNew(SContentReference)
-				.AssetReference(AbilityEditor.ToSharedRef(), &FAblAbilityEditor::GetAbilityBlueprintAsObject)
+				.AssetReference(AbilityEditorRef, &FAblAbilityEditor::GetAbilityBlueprintAsObject)
 			.AllowSelectingNewAsset(false)
 			.AllowClearingReference(false)
 			.WidthOverride(ContentRefWidth)
@@ -189,10 +187,8 @@ void FAblAbilityEditorToolbar::FillAbilityEditorModeToolbar(FToolBarBuilder& Too
 	}
 }
 
-void FAblAbilityEditorToolbar::AddTimelineToolbar(TSharedPtr<FExtender> Extender, TSharedPtr<FAblAbilityEditor> InAbilityEditor)
+void FAblAbilityEditorToolbar::AddTimelineToolbar(TSharedPtr<FExtender> Extender)
 {
-	m_AbilityEditor = InAbilityEditor;
-
 	Extender->AddToolBarExtension(
 		"Asset",
 		EExtensionHook::After,
@@ -205,19 +201,33 @@ void FAblAbilityEditorToolbar::OnPreviewAssetSelected(const FAssetData& Asset)
 	if (!IsAssetValid(Asset))
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, EAppReturnType::Ok, LOCTEXT("InvalidAssetErrorMessage", "The Asset choosen isn't an Actor. Please choose an appropriate actor."));
+
+		return;
 	}
 
 	m_AbilityEditor.Pin()->SetPreviewAsset(Asset);
 }
 
-void FAblAbilityEditorToolbar::OnTargetAssetSelected(const FAssetData& Asset)
+void FAblAbilityEditorToolbar::OnTargetAssetSelected(const FAssetData& Asset )
 {
 	if (!IsAssetValid(Asset))
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, EAppReturnType::Ok, LOCTEXT("InvalidAssetErrorMessage", "The Asset choosen isn't an Actor. Please choose an appropriate actor."));
+
+		return;
 	}
 
 	m_AbilityEditor.Pin()->SetTargetAsset(Asset);
+}
+
+FAssetData FAblAbilityEditorToolbar::OnGetPreviewAsset() const
+{
+	return FAssetData(m_AbilityEditorSettings->m_PreviewAsset.TryLoad());
+}
+
+FAssetData FAblAbilityEditorToolbar::OnGetTargetAsset() const
+{
+	return FAssetData(m_AbilityEditorSettings->m_TargetAsset.TryLoad());
 }
 
 TSharedRef<SWidget> FAblAbilityEditorToolbar::OnAddPreviewAssetWidgets()
@@ -230,7 +240,7 @@ TSharedRef<SWidget> FAblAbilityEditorToolbar::OnAddPreviewAssetWidgets()
 			.ButtonStyle(FCoreStyle::Get(), "Toolbar.Button")
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
-			.OnClicked(this, &FAblAbilityEditorToolbar::OnResetPreviewAsset)
+			//.OnClicked(this, &FAblAbilityEditorToolbar::OnResetPreviewAsset)
 			.ToolTipText(LOCTEXT("PreviewResetTooltip", "Reset the Preview actor to it's last position before an Ability was executed."))
 			[
 				SNew(SImage).Image(FAbleStyle::Get()->GetBrush("AblAbilityEditor.ResetButton"))
@@ -248,7 +258,7 @@ TSharedRef<SWidget> FAblAbilityEditorToolbar::OnAddTargetAssetWidgets()
 			.ButtonStyle(FCoreStyle::Get(), "Toolbar.Button")
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
-			.OnClicked(this, &FAblAbilityEditorToolbar::OnResetTargetAsset)
+			//.OnClicked(this, &FAblAbilityEditorToolbar::OnResetTargetAsset)
 			.ToolTipText(LOCTEXT("TargetResetTooltip", "Reset the Target actor(s) to their last position before an Ability was executed."))
 			[
 				SNew(SImage).Image(FAbleStyle::Get()->GetBrush("AblAbilityEditor.ResetButton"))
@@ -271,7 +281,6 @@ TSharedRef<SWidget> FAblAbilityEditorToolbar::OnAddTargetAssetWidgets()
 
 TSharedRef<SWidget> FAblAbilityEditorToolbar::GenerateForceTargetComboBox()
 {
-	check(m_AbilityEditor.IsValid());
 	const TArray<TWeakObjectPtr<AActor>>& allTargets = m_AbilityEditor.Pin()->GetAbilityPreviewTargets();
 
 	FMenuBuilder TargetMenu(true, nullptr);
@@ -304,53 +313,31 @@ TSharedRef<SWidget> FAblAbilityEditorToolbar::GenerateForceTargetComboBox()
 
 void FAblAbilityEditorToolbar::SetForceTarget(int index)
 {
-	if (m_AbilityEditor.IsValid())
+	if (index == 0)
 	{
-		if (index == 0)
-		{
-			m_AbilityEditor.Pin()->ClearForceTarget();
-		}
-		else
-		{
-			m_AbilityEditor.Pin()->SetForceTarget(index - 1);
-		}
+		m_AbilityEditor.Pin()->ClearForceTarget();
+	}
+	else
+	{
+		m_AbilityEditor.Pin()->SetForceTarget(index - 1);
 	}
 }
 
-FReply FAblAbilityEditorToolbar::OnResetPreviewAsset()
+void FAblAbilityEditorToolbar::OnResetPreviewAsset()
 {
-	if (m_AbilityEditor.IsValid())
-	{
-		m_AbilityEditor.Pin()->ResetPreviewActor();
-
-		return FReply::Handled();
-	}
-
-	return FReply::Unhandled();
+	m_AbilityEditor.Pin()->ResetPreviewActor();
 }
 
-FReply FAblAbilityEditorToolbar::OnResetTargetAsset()
+void FAblAbilityEditorToolbar::OnResetTargetAsset()
 {
-	if (m_AbilityEditor.IsValid())
-	{
-		m_AbilityEditor.Pin()->ResetTargetActors();
-
-		return FReply::Handled();
-	}
-
-	return FReply::Unhandled();
+	m_AbilityEditor.Pin()->ResetTargetActors();
 }
 
 FReply FAblAbilityEditorToolbar::OnAddTargetAsset()
 {
-	if (m_AbilityEditor.IsValid())
-	{
-		m_AbilityEditor.Pin()->AddAbilityPreviewTarget();
+	m_AbilityEditor.Pin()->AddAbilityPreviewTarget();
 
-		return FReply::Handled();
-	}
-
-	return FReply::Unhandled();
+	return FReply::Handled();
 }
 
 void FAblAbilityEditorToolbar::FillTimelineModeToolbar(FToolBarBuilder& ToolbarBuilder)
@@ -372,70 +359,43 @@ void FAblAbilityEditorToolbar::FillTimelineModeToolbar(FToolBarBuilder& ToolbarB
 		ToolbarBuilder.AddToolBarButton(Commands.m_StepAbility);
 		ToolbarBuilder.AddToolBarButton(Commands.m_StopAbility);
 		ToolbarBuilder.AddToolBarButton(Commands.m_Resize);
-		//ToolbarBuilder.AddToolBarButton(Commands.m_SetPreviewAsset);
-		//ToolbarBuilder.AddToolBarButton(Commands.m_ResetPreviewAsset);
 		ToolbarBuilder.AddToolBarButton(Commands.m_Validate);
-		ToolbarBuilder.AddToolBarButton(Commands.m_ToggleCost);
+		//ToolbarBuilder.AddToolBarButton(Commands.m_ToggleCost); // TODO: Reimplement this.
 
-		TWeakPtr<FAblAbilityEditor> WeakAbilityEditor = m_AbilityEditor.Pin();
 		UAssetManager& AssetManager = UAssetManager::Get();
-		UAblAbilityEditorSettings& EditorSettings = WeakAbilityEditor.Pin()->GetEditorSettings();
+		UAblAbilityEditorSettings& EditorSettings = m_AbilityEditor.Pin()->GetEditorSettings();
 
-		// Preview Asset Generic Asset Widget
-		TArray<FName> ClassFilter;
-		EditorSettings.m_PreviewAllowedClasses.RemoveAll([](UClass* lhs) { return lhs == nullptr; });
-		for (UClass* PreviewClass : EditorSettings.m_PreviewAllowedClasses)
-		{
-			ClassFilter.Add(PreviewClass->GetFName());
-		}
-		ClassFilter.Add(UBlueprint::StaticClass()->GetFName());
 
-		if (ClassFilter.Num() == 0)
+		if (EditorSettings.m_PreviewAsset.IsValid())
 		{
-			FMessageDialog::Open(EAppMsgType::Ok, EAppReturnType::Ok, LOCTEXT("NoClassErrorMessage", "Your Class list is empty for this actor. You will not be able to find any assets in the drop down.\nAdd the class you are looking for to the Ability Editor Settings and restart the Ability Editor."));
+			FAssetData PreviewAssetData;
+			AssetManager.GetAssetDataForPath(EditorSettings.m_PreviewAsset, PreviewAssetData);
 		}
 
-		FAssetData PreviewAssetData;
-		AssetManager.GetAssetDataForPath(EditorSettings.m_PreviewAsset, PreviewAssetData);
-		SAblGenericAssetShortcut::FOnAddAdditionalWidgets PreviewCallback;
-		PreviewCallback.BindSP(this, &FAblAbilityEditorToolbar::OnAddPreviewAssetWidgets);
-		FText PreviewAssetLabel = LOCTEXT("PreviewAssetButton", "Preview Asset");
-		TSharedRef<SAblGenericAssetShortcut> PreviewAsset = SNew(SAblGenericAssetShortcut, PreviewAssetData, m_PreviewThumbnailPool.ToSharedRef(), PreviewAssetLabel, PreviewCallback);
-		PreviewAsset->SetHostingApp(WeakAbilityEditor);
-		PreviewAsset->SetFilterData(ClassFilter);
-		PreviewAsset->SetClassFilter(EditorSettings.m_PreviewAllowedClasses);
-		PreviewAsset->OnAssetSelectedCallback().BindSP(this, &FAblAbilityEditorToolbar::OnPreviewAssetSelected);
-		ToolbarBuilder.AddWidget(PreviewAsset);
+		const FSlateBrush* DefaultPreviewBrush = FAppStyle::Get().GetBrush("Persona.AssetClass.Skeleton");
+		FSlateColor DefaultPreviewIconColor = FSlateColor(FColor::Green);
 
-		// Target Asset Generic Asset Widget
-		FAssetData TargetAssetData;
-		ClassFilter.Empty();
-		EditorSettings.m_TargetAllowedClasses.RemoveAll([](UClass* lhs) { return lhs == nullptr; });
-		for (UClass* TargetClass : EditorSettings.m_TargetAllowedClasses)
-		{
-			ClassFilter.Add(TargetClass->GetFName());
-		}
-		ClassFilter.Add(UBlueprint::StaticClass()->GetFName());
+		TSharedPtr<FAblAssetShortcutParams> PreviewAssetFamily = MakeShareable(new FAblAssetShortcutParams(APawn::StaticClass(), LOCTEXT("PreviewAssetButton", "Preview Asset\n\nClick to reset the actor in the Editor."), DefaultPreviewBrush, DefaultPreviewIconColor));
+		PreviewAssetFamily->AssetCallback.BindSP(this, &FAblAbilityEditorToolbar::OnPreviewAssetSelected);
+		PreviewAssetFamily->AssetClickCallback.BindSP(this, &FAblAbilityEditorToolbar::OnResetPreviewAsset);
+		
+		TSharedPtr<FAblAssetShortcutParams> TargetAssetFamily = MakeShareable(new FAblAssetShortcutParams(APawn::StaticClass(), LOCTEXT("TargetAssetButton", "Target Asset\n\nClick to reset the actor in the Editor."), DefaultPreviewBrush, DefaultPreviewIconColor));
+		TargetAssetFamily->AssetCallback.BindSP(this, &FAblAbilityEditorToolbar::OnTargetAssetSelected);
+		PreviewAssetFamily->AssetClickCallback.BindSP(this, &FAblAbilityEditorToolbar::OnResetTargetAsset);
 
-		if (ClassFilter.Num() == 0)
-		{
-			FMessageDialog::Open(EAppMsgType::Ok, EAppReturnType::Ok, LOCTEXT("NoClassErrorMessage", "Your Class list is empty for this actor. You will not be able to find any assets in the drop down.\nAdd the class you are looking for to the Ability Editor Settings and restart the Ability Editor."));
-		}
+		TArray<TSharedPtr<FAblAssetShortcutParams>> Shortcuts;
+		Shortcuts.Add(PreviewAssetFamily);
+		Shortcuts.Add(TargetAssetFamily);
+		
+		TSharedRef<SAblAssetFamilyShortcutBar> ShortcutBar = SNew(SAblAssetFamilyShortcutBar, m_AbilityEditor.Pin().ToSharedRef(), Shortcuts);
 
-		AssetManager.GetAssetDataForPath(EditorSettings.m_TargetAsset, TargetAssetData);
-		SAblGenericAssetShortcut::FOnAddAdditionalWidgets TargetCallback;
-		TargetCallback.BindSP(this, &FAblAbilityEditorToolbar::OnAddTargetAssetWidgets);
-		FText TargetAssetLabel = LOCTEXT("TargetAssetButton", "Target Asset");
-		TSharedRef<SAblGenericAssetShortcut> TargetAsset = SNew(SAblGenericAssetShortcut, TargetAssetData, m_TargetThumbnailPool.ToSharedRef(), TargetAssetLabel, TargetCallback);
-		TargetAsset->SetHostingApp(WeakAbilityEditor);
-		TargetAsset->SetFilterData(ClassFilter);
-		TargetAsset->SetClassFilter(EditorSettings.m_TargetAllowedClasses);
-		TargetAsset->OnAssetSelectedCallback().BindSP(this, &FAblAbilityEditorToolbar::OnTargetAssetSelected);
-		ToolbarBuilder.AddWidget(TargetAsset);
+		ToolbarBuilder.AddWidget(ShortcutBar);
+
 		ToolbarBuilder.AddComboButton(FUIAction(),
 			FOnGetContent::CreateSP(this, &FAblAbilityEditorToolbar::GenerateForceTargetComboBox),
 			LOCTEXT("ForceTargetLabel", "Override Target"),
 			LOCTEXT("ForceTargetTooltip", "Forces the Ability to set the provided actor as the target."));
+
 		ToolbarBuilder.EndSection();
 
 }

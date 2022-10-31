@@ -134,7 +134,7 @@ bool UAblJumpToTask::IsDone(const TWeakObjectPtr<const UAblAbilityContext>& Cont
 
 UAblAbilityTaskScratchPad* UAblJumpToTask::CreateScratchPad(const TWeakObjectPtr<UAblAbilityContext>& Context) const
 {
-	if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+	if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 	{
 		static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblJumpToScratchPad::StaticClass();
 		return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

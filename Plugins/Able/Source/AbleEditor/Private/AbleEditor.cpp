@@ -23,6 +23,7 @@
 #include "Misc/SlowTask.h"
 #include "Tasks/ablCustomTask.h"
 #include "Editor.h"
+#include "UObject/UObjectGlobals.h"
 
 #include "IAbleEditor.h"
 
@@ -30,32 +31,9 @@ DEFINE_LOG_CATEGORY(LogAbleEditor);
 
 #define LOCTEXT_NAMESPACE "AbleEditor"
 
-class FAbleEditor : public IAbleEditor
-{
-	/** IModuleInterface implementation */
-	virtual void StartupModule() override;
-	virtual void ShutdownModule() override;
 
-	virtual uint32 GetAbleAssetCategory() const override { return m_AbleAssetCategory; }
-	void LoadAbilities();
-	void OnObjectReplaced(const UEditorEngine::ReplacementObjectMap& Replacements);
-	void OnAbilityEditorInstantiated(FAblAbilityEditor& AbilityEditor);
-	void OnAbilityTaskCreated(FAblAbilityEditor& AbilityEditor, UAblAbilityTask& Task);
-private:
-	void RegisterAssetTypes(IAssetTools& AssetTools);
-	void RegisterSettings();
-	void UnregisterSettings();
 
-	EAssetTypeCategories::Type m_AbleAssetCategory;
-
-	TArray<TSharedPtr<IAssetTypeActions>> m_CreatedAssetTypeActions;
-
-	TSharedPtr<FAblPlayAnimationAddedHandler> m_PlayAnimationTaskHandler;
-
-	TArray<UAblAbility*> m_LoadedAbilities;
-};
-
-void FAbleEditor::StartupModule()
+void FAbleEditorModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory (but after global variables are initialized, of course.)
 	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
@@ -72,15 +50,10 @@ void FAbleEditor::StartupModule()
 
 	m_PlayAnimationTaskHandler = MakeShareable(new FAblPlayAnimationAddedHandler());
 	m_PlayAnimationTaskHandler->Register();
-
-	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-	AssetRegistryModule.Get().OnFilesLoaded().AddRaw(this, &FAbleEditor::LoadAbilities);
-	FAbleEditorEventManager::Get().OnAbilityEditorInstantiated().AddRaw(this, &FAbleEditor::OnAbilityEditorInstantiated);
-	FAbleEditorEventManager::Get().OnAnyAbilityTaskCreated().AddRaw(this, &FAbleEditor::OnAbilityTaskCreated);
 }
 
 
-void FAbleEditor::ShutdownModule()
+void FAbleEditorModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
@@ -115,147 +88,7 @@ void FAbleEditor::ShutdownModule()
 	m_CreatedAssetTypeActions.Empty();
 }
 
-void FAbleEditor::LoadAbilities()
-{
-	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-	TArray<FAssetData> allAbilities;
-	AssetRegistryModule.Get().GetAssetsByClass(UAblAbilityBlueprint::StaticClass()->GetFName(), allAbilities);
-
-	{
-		FSlowTask LoadingAbilities(allAbilities.Num(), LOCTEXT("LoadingAbilitiesSlowTask", "Loading Abilities..."));
-
-		for (const FAssetData& assetData : allAbilities)
-		{
-			UAblAbilityBlueprint* LoadedObject = CastChecked<UAblAbilityBlueprint>(assetData.GetAsset());
-			if (LoadedObject->GeneratedClass)
-			{
-				UAblAbility* LoadedAbility = CastChecked<UAblAbility>(LoadedObject->GeneratedClass->GetDefaultObject());
-				if (!LoadedAbility)
-				{
-					continue;
-				}
-				
-				// Disabling this for now.
-				//if (LoadedAbility->FixUpObjectFlags())
-				//{
-				//	LoadedAbility->Modify();
-				//}
-
-				if (LoadedAbility->GetTasks().FindItemByClass<UAblCustomTask>()) // Only watch Abilities with Custom tasks.
-				{
-					LoadedAbility->AddToRoot();
-					m_LoadedAbilities.Add(LoadedAbility);
-				}
-			}
-
-			LoadingAbilities.CompletedWork += 1.0f;
-		}
-	}
-
-	if (GEditor)
-	{
-		GEditor->OnObjectsReplaced().AddRaw(this, &FAbleEditor::OnObjectReplaced);
-	}
-}
-
-void FAbleEditor::OnObjectReplaced(const UEditorEngine::ReplacementObjectMap& Replacements)
-{
-	for (const TPair<UObject*, UObject*>& kvp : Replacements)
-	{
-		if (kvp.Key->IsA<UAblAbility>())
-		{
-			UAblAbility* NewAbility = CastChecked<UAblAbility>(kvp.Key);
-			int index = 0;
-
-			// Are we already watching this ability?
-			if (m_LoadedAbilities.Find(NewAbility, index))
-			{
-				m_LoadedAbilities[index]->RemoveFromRoot();
-				m_LoadedAbilities[index] = CastChecked<UAblAbility>(kvp.Value);
-				m_LoadedAbilities[index]->AddToRoot();
-			}
-			else if (NewAbility->GetTasks().FindItemByClass<UAblCustomTask>()) // Should we be?
-			{
-				NewAbility = CastChecked<UAblAbility>(kvp.Value);
-				NewAbility->AddToRoot();
-				m_LoadedAbilities.Add(NewAbility);
-			}
-		}
-		else if (kvp.Key->IsA<UBlueprintGeneratedClass>())
-		{
-			UBlueprintGeneratedClass* BPC = CastChecked<UBlueprintGeneratedClass>(kvp.Key);
-			if (BPC->GetName().StartsWith(TEXT("REINST_")))
-			{
-				UBlueprintGeneratedClass* newBPC = Cast<UBlueprintGeneratedClass>(kvp.Value);
-				if (newBPC &&
-					newBPC->ClassDefaultObject &&
-					newBPC->ClassDefaultObject->IsA<UAblCustomTask>())
-				{
-					UAblCustomTask* BP = CastChecked<UAblCustomTask>(newBPC->ClassDefaultObject);
-
-					for (UAblAbility* Ability : m_LoadedAbilities)
-					{
-						TArray<UAblAbilityTask*>& allTasks = Ability->GetMutableTasks();
-						for (int i = 0; i < allTasks.Num(); ++i)
-						{
-							if (!allTasks[i]->IsA<UAblCustomTask>())
-							{
-								continue;
-							}
-
-							UBlueprintGeneratedClass* TaskBGC = Cast<UBlueprintGeneratedClass>(allTasks[i]->GetClass());
-							if (TaskBGC && TaskBGC->GetFName() == BPC->GetFName())
-							{
-								UAblAbilityTask* NewTask = NewObject<UAblAbilityTask>(Ability, BP->GetClass(), NAME_None, Ability->GetMaskedFlags(RF_PropagateToSubObjects) | RF_Transactional);
-
-								NewTask->CopyProperties(*allTasks[i]);
-								//NewTask->FixUpObjectFlags();
-
-								allTasks[i] = NewTask;
-								Ability->ValidateDependencies();
-								Ability->MarkPackageDirty();
-								Ability->EditorRefreshBroadcast();
-							}
-						}
-					}
-				}
-			}
-		}
-
-	}
-}
-
-void FAbleEditor::OnAbilityEditorInstantiated(FAblAbilityEditor& AbilityEditor)
-{
-	// See if we need to watch this Ability.
-	if (UAblAbility* Ability = AbilityEditor.GetAbility())
-	{
-		if (Ability->NeedsCompactData())
-		{
-			if (m_LoadedAbilities.Find(Ability) == INDEX_NONE)
-			{
-				m_LoadedAbilities.Add(Ability);
-			}
-		}
-	}
-}
-
-void FAbleEditor::OnAbilityTaskCreated(FAblAbilityEditor& AbilityEditor, UAblAbilityTask& Task)
-{
-	// Do we need to watch this Task/Ability?
-	if (Task.HasCompactData())
-	{
-		if (UAblAbility* Ability = AbilityEditor.GetAbility())
-		{
-			if (m_LoadedAbilities.Find(Ability) == INDEX_NONE)
-			{
-				m_LoadedAbilities.Add(Ability);
-			}
-		}
-	}
-}
-
-void FAbleEditor::RegisterAssetTypes(IAssetTools& AssetTools)
+void FAbleEditorModule::RegisterAssetTypes(IAssetTools& AssetTools)
 {
 	// Register any asset types
 	
@@ -263,11 +96,9 @@ void FAbleEditor::RegisterAssetTypes(IAssetTools& AssetTools)
 	TSharedRef<IAssetTypeActions> AbilityBlueprint = MakeShareable(new FAssetTypeActions_AblAbilityBlueprint(m_AbleAssetCategory));
 	AssetTools.RegisterAssetTypeActions(AbilityBlueprint);
 	m_CreatedAssetTypeActions.Add(AbilityBlueprint);
-
-
 }
 
-void FAbleEditor::RegisterSettings()
+void FAbleEditorModule::RegisterSettings()
 {
 	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
 	{
@@ -283,7 +114,7 @@ void FAbleEditor::RegisterSettings()
 	}
 }
 
-void FAbleEditor::UnregisterSettings()
+void FAbleEditorModule::UnregisterSettings()
 {
 	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
 	{
@@ -292,5 +123,21 @@ void FAbleEditor::UnregisterSettings()
 	}
 }
 
+TSharedRef<FAblAbilityEditor> FAbleEditorModule::CreateAbilityEditor(const EToolkitMode::Type Mode, const TSharedPtr< IToolkitHost >& InitToolkitHost, UBlueprint* Blueprint, bool bShouldOpenInDefaultsMode)
+{
+	TArray<UBlueprint*> BlueprintsToEdit = { Blueprint };
+	return CreateAbilityEditor(Mode, InitToolkitHost, BlueprintsToEdit, bShouldOpenInDefaultsMode);
+}
 
-IMPLEMENT_MODULE(FAbleEditor, AbleEditor)
+TSharedRef<FAblAbilityEditor> FAbleEditorModule::CreateAbilityEditor(const EToolkitMode::Type Mode, const TSharedPtr< IToolkitHost >& InitToolkitHost, const TArray< UBlueprint* >& BlueprintsToEdit, bool bShouldOpenInDefaultsMode)
+{
+	TSharedRef< FAblAbilityEditor > NewAbilityEditor(new FAblAbilityEditor());
+
+	NewAbilityEditor->InitAbilityEditor(Mode, InitToolkitHost, BlueprintsToEdit, bShouldOpenInDefaultsMode);
+
+	m_AbilityEditors.Add(NewAbilityEditor);
+
+	return NewAbilityEditor;
+}
+
+IMPLEMENT_MODULE(FAbleEditorModule, AbleEditor)

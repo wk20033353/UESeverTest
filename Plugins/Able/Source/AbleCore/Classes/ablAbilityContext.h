@@ -13,9 +13,8 @@
 
 class UAblAbility;
 class UAblAbilityComponent;
-class UAblAbilityContextSubsystem;
+class UAblAbilityUtilitySubsystem;
 class UAblAbilityScratchPad;
-class UAblScratchPadSubsystem;
 class UAbleSettings;
 
 #define LOCTEXT_NAMESPACE "AblAbilityContext"
@@ -69,6 +68,69 @@ public:
 
 /* Slightly more compact version of our normal Ability Context, for transfer across the wire. */
 USTRUCT()
+struct ABLECORE_API FAblAbilityContextParams
+{
+	GENERATED_USTRUCT_BODY();
+public:
+	FAblAbilityContextParams();
+	FAblAbilityContextParams(const FAblAbilityContextParams& Context);
+	void ClearParams();
+	void AppendParams(const FAblAbilityContextParams& params);
+
+	/* Parameter Accessors. */
+	const TMap<FName, int>& GetIntParameters() const { return m_IntParameters; }
+	const TMap<FName, float>& GetFloatParameters() const { return m_FloatParameters; }
+	const TMap<FName, FString>& GetStringParameters() const { return m_StringParameters; }
+	const TMap<FName, UObject*>& GetUObjectParameters() const { return m_UObjectParameters; }
+	const TMap<FName, FVector>& GetVectorParameters() const { return m_VectorParameters; }
+
+	void AppendIntParams(const TMap<FName, int>& params) { m_IntParameters.Append(params); }
+	void AppendFloatParams(const TMap<FName, float>& params) { m_FloatParameters.Append(params); }
+	void AppendStringParams(const TMap<FName, FString>& params) { m_StringParameters.Append(params); }
+	void AppendUObjectParams(const TMap<FName, UObject*>& params) { m_UObjectParameters.Append(params); }
+	void AppendVectorParams(const TMap<FName, FVector>& params) { m_VectorParameters.Append(params); }
+
+	//Set an Integer parameter on this Context using an FName Identifier. Parameters are not replicated across client/server.
+	void SetIntParameter(FName Id, int Value);
+	// Set an Float parameter on this Context using an FName Identifier. Parameters are not replicated across client/server.
+	void SetFloatParameter(FName Id, float Value);
+	//Set an String parameter on this Context using an FName Identifier. Parameters are not replicated across client/server.
+	void SetStringParameter(FName Id, const FString& Value);
+	//Set an UObject parameter on this Context using an FName Identifier. Parameters are not replicated across client/server.
+	void SetUObjectParameter(FName Id, UObject* Value);
+	//Set an Vector parameter on this Context using an FName Identifier. Parameters are not replicated across client/server.
+	void SetVectorParameter(FName Id, FVector Value);
+
+	//return the parameter value, or 0 if not found.
+	int GetIntParameter(FName Id) const;
+	//return the parameter value, or 0.0 if not found.
+	float GetFloatParameter(FName Id) const;
+	//return the parameter value, or empty string if not found.
+	const FString& GetStringParameter(FName Id) const;
+	//return the parameter value, or nullptr if not found.
+	UObject* GetUObjectParameter(FName Id) const;
+	//return the parameter value, or nullptr if not found.
+	FVector GetVectorParameter(FName Id) const;
+
+private:
+	UPROPERTY(Transient, NotReplicated)
+		TMap<FName, int> m_IntParameters;
+
+	UPROPERTY(Transient, NotReplicated)
+		TMap<FName, float> m_FloatParameters;
+
+	UPROPERTY(Transient, NotReplicated)
+		TMap<FName, FString> m_StringParameters;
+
+	UPROPERTY(Transient, NotReplicated)
+		TMap<FName, UObject*> m_UObjectParameters;
+
+	UPROPERTY(Transient, NotReplicated)
+		TMap<FName, FVector> m_VectorParameters;
+};
+
+/* Slightly more compact version of our normal Ability Context, for transfer across the wire. */
+USTRUCT()
 struct ABLECORE_API FAblAbilityNetworkContext
 {
 	GENERATED_USTRUCT_BODY();
@@ -117,11 +179,12 @@ public:
 	uint16 GetPredictionKey() const { return m_PredictionKey; }
 
 	/* Parameter Accessors. */
-	const TMap<FName, int>& GetIntParameters() const { return m_IntParameters; }
-	const TMap<FName, float>& GetFloatParameters() const { return m_FloatParameters; }
-	const TMap<FName, FString>& GetStringParameters() const { return m_StringParameters; }
-	const TMap<FName, UObject*>& GetUObjectParameters() const { return m_UObjectParameters; }
-	const TMap<FName, FVector>& GetVectorParameters() const { return m_VectorParameters; }
+	const FAblAbilityContextParams& GetParameters() const { return m_Parameters; }
+	const TMap<FName, int>& GetIntParameters() const { return m_Parameters.GetIntParameters(); }
+	const TMap<FName, float>& GetFloatParameters() const { return m_Parameters.GetFloatParameters(); }
+	const TMap<FName, FString>& GetStringParameters() const { return m_Parameters.GetStringParameters(); }
+	const TMap<FName, UObject*>& GetUObjectParameters() const { return m_Parameters.GetUObjectParameters(); }
+	const TMap<FName, FVector>& GetVectorParameters() const { return m_Parameters.GetVectorParameters(); }
 private:
 	/* The Ability for this Context. */
 	UPROPERTY()
@@ -161,19 +224,7 @@ private:
 	uint16 m_PredictionKey;
 
 	UPROPERTY(Transient, NotReplicated)
-	TMap<FName, int> m_IntParameters;
-
-	UPROPERTY(Transient, NotReplicated)
-	TMap<FName, float> m_FloatParameters;
-
-	UPROPERTY(Transient, NotReplicated)
-	TMap<FName, FString> m_StringParameters;
-
-	UPROPERTY(Transient, NotReplicated)
-	TMap<FName, UObject*> m_UObjectParameters;
-
-	UPROPERTY(Transient, NotReplicated)
-	TMap<FName, FVector> m_VectorParameters;
+	FAblAbilityContextParams m_Parameters;
 };
 
 class AbleRWScopeLock
@@ -505,24 +556,18 @@ public:
 	/* Returns the Prediction Key */
 	uint16 GetPredictionKey() const { return m_PredictionKey; }
 
-	/* Returns the Scratchpad Subsystem. */
-	UAblScratchPadSubsystem* GetScratchPadSubsystem() const;
-
-	/* Returns the Ability Context Subsystem. */
-	UAblAbilityContextSubsystem* GetContextSubsystem() const;
+	/* Returns the Able Utility Subsystem. */
+	UAblAbilityUtilitySubsystem* GetUtilitySubsystem() const;
 
 	/* Parameter Accessors. */
-	const TMap<FName, int>& GetIntParameters() const { return m_IntParameters; }
-	const TMap<FName, float>& GetFloatParameters() const { return m_FloatParameters; }
-	const TMap<FName, FString>& GetStringParameters() const { return m_StringParameters; }
-	const TMap<FName, UObject*>& GetUObjectParameters() const { return m_UObjectParameters; }
-	const TMap<FName, FVector>& GetVectorParameters() const { return m_VectorParameters; }
+	const FAblAbilityContextParams& GetParameters() const { return m_Parameters; }
+	const TMap<FName, int>& GetIntParameters() const { return m_Parameters.GetIntParameters(); }
+	const TMap<FName, float>& GetFloatParameters() const { return m_Parameters.GetFloatParameters(); }
+	const TMap<FName, FString>& GetStringParameters() const { return m_Parameters.GetStringParameters(); }
+	const TMap<FName, UObject*>& GetUObjectParameters() const { return m_Parameters.GetUObjectParameters(); }
+	const TMap<FName, FVector>& GetVectorParameters() const { return m_Parameters.GetVectorParameters(); }
 
-	TMap<FName, int>& GetMutableIntParameters() { return m_IntParameters; }
-	TMap<FName, float>& GetMutableFloatParameters() { return m_FloatParameters; }
-	TMap<FName, FString>& GetMutableStringParameters() { return m_StringParameters; }
-	TMap<FName, UObject*>& GetMutableUObjectParameters() { return m_UObjectParameters; }
-	TMap<FName, FVector>& GetMutableVectorParameters() { return m_VectorParameters; }
+	FAblAbilityContextParams& GetMutableParameters() { return m_Parameters; }
 	/* Resets the Context to it's default state, and returns it to the pool if pooling is enabled.*/
 	void Reset();
 protected:
@@ -592,19 +637,7 @@ protected:
 
 	/* Various context variables. Only allowed to be set */
 	UPROPERTY(Transient)
-	TMap<FName, int> m_IntParameters;
-
-	UPROPERTY(Transient)
-	TMap<FName, float> m_FloatParameters;
-
-	UPROPERTY(Transient)
-	TMap<FName, FString> m_StringParameters;
-
-	UPROPERTY(Transient)
-	TMap<FName, UObject*> m_UObjectParameters;
-
-	UPROPERTY(Transient)
-	TMap<FName, FVector> m_VectorParameters;
+	FAblAbilityContextParams m_Parameters;
 
 	/* ReadWrite Lock for Context Variables. */
 	mutable FRWLock m_ContextVariablesLock;

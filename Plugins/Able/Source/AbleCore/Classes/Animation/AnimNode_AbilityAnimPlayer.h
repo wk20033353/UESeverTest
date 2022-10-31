@@ -28,6 +28,8 @@ public:
 
 	float TimeAccumulator;
 
+	FDeltaTimeRecord DeltaTimeRecord;
+
 	FMarkerTickRecord MarkerTickRecord;
 
 	FAlphaBlend BlendIn;
@@ -48,9 +50,9 @@ struct ABLECORE_API FAnimNode_AbilityAnimPlayer : public FAnimNode_AssetPlayerBa
 public:
 
 	// FAnimNode_AssetPlayerBase interface
-	virtual float GetCurrentAssetTime() override;
-	virtual float GetCurrentAssetLength() override;
-	virtual float GetCurrentAssetTimePlayRateAdjusted() override;
+	virtual float GetCurrentAssetTime() const override;
+	virtual float GetCurrentAssetLength() const  override;
+	virtual float GetCurrentAssetTimePlayRateAdjusted() const override;
 	// End of FAnimNode_AssetPlayerBase interface
 
 	// FAnimNode_Base interface

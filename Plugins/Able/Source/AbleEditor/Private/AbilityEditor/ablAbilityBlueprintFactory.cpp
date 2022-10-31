@@ -161,7 +161,7 @@ private:
 
 		// All child child classes of UAblAbility are valid.
 		Filter->m_AllowedChildrenOfClasses.Add(UAblAbility::StaticClass());
-		Options.ClassFilter = Filter;
+		Options.ClassFilters.Add(Filter.ToSharedRef());
 
 		m_ParentClassContainer->ClearChildren();
 		m_ParentClassContainer->AddSlot()

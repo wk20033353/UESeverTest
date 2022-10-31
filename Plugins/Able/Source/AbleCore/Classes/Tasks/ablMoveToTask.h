@@ -94,7 +94,7 @@ public:
 	virtual FText GetDescriptiveTaskName() const override;
 
 	/* Returns the description of our Task. */
-	virtual FText GetTaskDescription() const override { return LOCTEXT("AblMoveToTaskDesc", "(EXPERIMENTAL) Moves an Actor from one location to another, either using physics or the nav mesh."); }
+	virtual FText GetTaskDescription() const override { return LOCTEXT("AblMoveToTaskDesc", "Moves an Actor from one location to another, either using physics or the nav mesh."); }
 
 	/* Returns the color of our Task. */
 	virtual FLinearColor GetTaskColor() const override { return FLinearColor(108.0f / 255.0f, 102.0 / 255.0f, 196.0f / 255.0f); }
@@ -114,11 +114,11 @@ protected:
 	TEnumAsByte<EAblMoveToTarget> m_TargetType;
 
 	/* The Target Actor to move to. */
-	UPROPERTY(EditAnywhere, Category = "Move", meta = (DisplayName = "Target Actor", EditCondition = "m_TargetType == EAblMoveToTarget::Actor"))
+	UPROPERTY(EditAnywhere, Category = "Move", meta = (DisplayName = "Target Actor", EditCondition = "m_TargetType == EAblMoveToTarget::MTT_Actor"))
 	TEnumAsByte<EAblAbilityTargetType> m_TargetActor;
 
 	/* The Target Location to move to. */
-	UPROPERTY(EditAnywhere, Category = "Move", meta = (DisplayName = "Target Location", EditCondition = "m_TargetType == EAblMoveToTarget::Location", AblBindableProperty))
+	UPROPERTY(EditAnywhere, Category = "Move", meta = (DisplayName = "Target Location", EditCondition = "m_TargetType == EAblMoveToTarget::MTT_Location", AblBindableProperty))
 	FVector m_TargetLocation;
 
 	UPROPERTY()

@@ -15,6 +15,7 @@
 #include "Components/StaticMeshComponent.h"
 
 #include "Editor.h"
+#include "Editor/UnrealEdEngine.h"
 #include "Editor/UnrealEd/Private/Editor/ActorPositioning.h"
 #include "Engine/Selection.h"
 #include "EngineUtils.h"
@@ -27,81 +28,14 @@
 
 #include "ImageUtils.h"
 #include "ObjectTools.h"
+#include "UnrealEdGlobals.h"
+#include "ThumbnailRendering/SceneThumbnailInfo.h"
+#include "ThumbnailRendering/ThumbnailManager.h"
 
 FAbilityEditorPreviewScene::FAbilityEditorPreviewScene(ConstructionValues CVS)
 	: FPreviewScene(CVS)
 {
-	// This is all from the AnimationEditorPreviewScene.cpp
 
-	// set light options 
-	DirectionalLight->SetRelativeLocation(FVector(-1024.f, 1024.f, 2048.f));
-	DirectionalLight->SetRelativeScale3D(FVector(15.f));
-	DirectionalLight->Mobility = EComponentMobility::Movable;
-	DirectionalLight->SetDynamicShadowDistanceStationaryLight(3000.f);
-
-	SetLightBrightness(4.f);
-
-	DirectionalLight->InvalidateLightingCache();
-	DirectionalLight->RecreateRenderState_Concurrent();
-
-	// A background sky sphere
-	m_EditorSkyComp = NewObject<UStaticMeshComponent>(GetTransientPackage());
-	UStaticMesh * StaticMesh = LoadObject<UStaticMesh>(NULL, TEXT("/Engine/MapTemplates/Sky/SM_SkySphere.SM_SkySphere"), NULL, LOAD_None, NULL);
-	check(StaticMesh);
-	m_EditorSkyComp->SetStaticMesh(StaticMesh);
-
-	// TODO: Clone this material in case it is ever removed?
-	UMaterial* SkyMaterial = LoadObject<UMaterial>(NULL, TEXT("/Engine/EditorMaterials/PersonaSky.PersonaSky"), NULL, LOAD_None, NULL);
-	check(SkyMaterial);
-	
-	m_EditorSkyComp->SetMaterial(0, SkyMaterial);
-	
-	const float SkySphereScale = 1000.f;
-	const FTransform SkyTransform(FRotator(0, 0, 0), FVector(0, 0, 0), FVector(SkySphereScale));
-	
-	AddComponent(m_EditorSkyComp, SkyTransform);
-
-	// now add height fog component
-
-	m_EditorHeightFogComponent = NewObject<UExponentialHeightFogComponent>(GetTransientPackage());
-
-	m_EditorHeightFogComponent->FogDensity = 0.00075f;
-	m_EditorHeightFogComponent->FogInscatteringColor = FLinearColor(3.f, 4.f, 6.f, 0.f)*0.3f;
-	m_EditorHeightFogComponent->DirectionalInscatteringExponent = 16.f;
-	m_EditorHeightFogComponent->DirectionalInscatteringColor = FLinearColor(1.1f, 0.9f, 0.538427f, 0.f);
-	m_EditorHeightFogComponent->FogHeightFalloff = 0.01f;
-	m_EditorHeightFogComponent->StartDistance = 30000.f;
-	
-	const FTransform FogTransform(FRotator(0, 0, 0), FVector(3824.f, 34248.f, 50000.f), FVector(80.f));
-	AddComponent(m_EditorHeightFogComponent, FogTransform);
-
-	// add capture component for reflection
-	// Turned off for 4.19, it requires a bake now which is an annoying warning...
-	//USphereReflectionCaptureComponent* CaptureComponent = NewObject<USphereReflectionCaptureComponent>(GetTransientPackage());
-
-	//const FTransform CaptureTransform(FRotator(0, 0, 0), FVector(0.f, 0.f, 100.f), FVector(1.f));
-	//AddComponent(CaptureComponent, CaptureTransform);
-	//
-	//CaptureComponent->MarkDirtyForRecapture();
-	//CaptureComponent->MarkRenderStateDirty();
-	//UReflectionCaptureComponent::UpdateReflectionCaptureContents(GetWorld());
-
-	// now add floor
-	UStaticMesh* FloorMesh = LoadObject<UStaticMesh>(NULL, TEXT("/Engine/EditorMeshes/PhAT_FloorBox.PhAT_FloorBox"), NULL, LOAD_None, NULL);
-	check(FloorMesh);
-
-	m_EditorFloorComp = NewObject<UStaticMeshComponent>(GetTransientPackage());
-	m_EditorFloorComp->SetStaticMesh(FloorMesh);
-
-	AddComponent(m_EditorFloorComp, FTransform::Identity);
-	
-	m_EditorFloorComp->SetRelativeScale3D(FVector(30.0f, 30.0f, 1.f));
-
-	// TODO: Again, clone since this is marked as Persona specific?
-	UMaterial* Material = LoadObject<UMaterial>(NULL, TEXT("/Engine/EditorMaterials/PersonaFloorMat.PersonaFloorMat"), NULL, LOAD_None, NULL);
-	check(Material);
-
-	m_EditorFloorComp->SetMaterial(0, Material);
 }
 
 FAbilityEditorViewportClient::FAbilityEditorViewportClient(FAbilityEditorPreviewScene& InPreviewScene, TWeakPtr<FAblAbilityEditor> InAbilityEditor, const TSharedRef<SAbilityEditorViewport>& InAbilityEditorViewport)
@@ -125,15 +59,38 @@ FAbilityEditorViewportClient::FAbilityEditorViewportClient(FAbilityEditorPreview
 
 	SetRealtime(true);
 
-	EngineShowFlags.DisableAdvancedFeatures();
-	EngineShowFlags.SetSeparateTranslucency(true);
-	EngineShowFlags.SetCompositeEditorPrimitives(true);
+	//EngineShowFlags.DisableAdvancedFeatures();
+	//EngineShowFlags.SetSeparateTranslucency(true);
+	//EngineShowFlags.SetCompositeEditorPrimitives(true);
 	EngineShowFlags.SetParticles(true);
 
 	if (UWorld* PreviewWorld = InPreviewScene.GetWorld())
 	{
 		PreviewWorld->bAllowAudioPlayback = !m_AbilityEditor.Pin()->GetEditorSettings().m_MuteAudio;
 	}
+
+	// now add floor
+	UStaticMeshComponent* EditorFloorComp = NewObject<UStaticMeshComponent>(GetTransientPackage(), TEXT("EditorFloorComp"));
+
+	UStaticMesh* FloorMesh = LoadObject<UStaticMesh>(NULL, TEXT("/Engine/EditorMeshes/PhAT_FloorBox.PhAT_FloorBox"), NULL, LOAD_None, NULL);
+	if (ensure(FloorMesh))
+	{
+		EditorFloorComp->SetStaticMesh(FloorMesh);
+	}
+
+	UMaterial* Material = LoadObject<UMaterial>(NULL, TEXT("/Engine/EditorMaterials/PersonaFloorMat.PersonaFloorMat"), NULL, LOAD_None, NULL);
+	if (ensure(Material))
+	{
+		EditorFloorComp->SetMaterial(0, Material);
+	}
+
+	EditorFloorComp->SetRelativeScale3D(FVector(6.f, 6.f, 1.f));
+	PreviewScene->AddComponent(EditorFloorComp, FTransform::Identity);
+
+	// Turn off so that actors added to the world do not have a lifespan (so they will not auto-destroy themselves).
+	PreviewScene->GetWorld()->bBegunPlay = false;
+
+	PreviewScene->SetSkyCubemap(GUnrealEd->GetThumbnailManager()->AmbientCubemap);
 
 }
 
@@ -304,7 +261,7 @@ void FAbilityEditorViewportClient::ProcessClick(class FSceneView& View, class HH
 			{
 				GEditor->SelectNone(false, true, false);
 				GEditor->SelectActor(ActorProxy->Actor, true, true, true);
-				SetWidgetMode(FWidget::WM_Translate);
+				SetWidgetMode(UE::Widget::WM_Translate);
 				return;
 			}
 		}
@@ -333,11 +290,11 @@ void FAbilityEditorViewportClient::TrackingStopped()
 	FEditorViewportClient::TrackingStopped();
 }
 
-FWidget::EWidgetMode FAbilityEditorViewportClient::GetWidgetMode() const
+UE::Widget::EWidgetMode FAbilityEditorViewportClient::GetWidgetMode() const
 {
 	if (!HasSelectedSpawnActors())
 	{
-		return FWidget::WM_None;
+		return UE::Widget::WM_None;
 	}
 
 	return FEditorViewportClient::GetWidgetMode();
@@ -422,5 +379,19 @@ void FAbilityEditorViewportClient::CaptureThumbnail()
 
 void FAbilityEditorViewportClient::TickWorld(float DeltaSeconds)
 {
-	PreviewScene->GetWorld()->Tick(LEVELTICK_All, DeltaSeconds);
+	// Tick the preview scene world.
+	if (!GIntraFrameDebuggingGameThread)
+	{
+		// Allow full tick only if preview simulation is enabled and we're not currently in an active SIE or PIE session
+		if (GEditor->PlayWorld == NULL && !GEditor->bIsSimulatingInEditor)
+		{
+			PreviewScene->GetWorld()->Tick(IsRealtime() ? LEVELTICK_All : LEVELTICK_TimeOnly, DeltaSeconds);
+		}
+		else
+		{
+			PreviewScene->GetWorld()->Tick(IsRealtime() ? LEVELTICK_ViewportsOnly : LEVELTICK_TimeOnly, DeltaSeconds);
+		}
+	}
+
+	//PreviewScene->GetWorld()->Tick(LEVELTICK_All, DeltaSeconds);
 }

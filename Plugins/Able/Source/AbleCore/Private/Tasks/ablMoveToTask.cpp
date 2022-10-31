@@ -197,7 +197,7 @@ void UAblMoveToTask::OnTaskEnd(const TWeakObjectPtr<const UAblAbilityContext>& C
 
 UAblAbilityTaskScratchPad* UAblMoveToTask::CreateScratchPad(const TWeakObjectPtr<UAblAbilityContext>& Context) const
 {
-	if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+	if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 	{
 		static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblMoveToScratchPad::StaticClass();
 		return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

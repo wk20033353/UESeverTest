@@ -79,7 +79,7 @@ public:
 	virtual FText GetDescriptiveTaskName() const override;
 
 	/* Returns the description of our Task. */
-	virtual FText GetTaskDescription() const override { return LOCTEXT("AblJumpToTaskDesc", "(EXPERIMENTAL) Causes an actor to jump/leap, using physics and a target destination."); }
+	virtual FText GetTaskDescription() const override { return LOCTEXT("AblJumpToTaskDesc", "Causes an actor to jump/leap, using physics and a target destination."); }
 
 	/* Returns the color of our Task. */
 	virtual FLinearColor GetTaskColor() const override { return FLinearColor(74.0 / 255.0f, 63.0 / 255.0f, 163.0f / 255.0f); }
@@ -97,15 +97,15 @@ protected:
 	TEnumAsByte<EAblJumpToTarget> m_TargetType;
 
 	/* The Target Actor to move to. */
-	UPROPERTY(EditAnywhere, Category = "Jump", meta = (DisplayName = "Target Actor", EditCondition = "m_TargetType == EAblJumpToTarget::Actor"))
+	UPROPERTY(EditAnywhere, Category = "Jump", meta = (DisplayName = "Target Actor", EditCondition = "m_TargetType == EAblJumpToTarget::JTT_Actor"))
 	TEnumAsByte<EAblAbilityTargetType> m_TargetActor;
 
 	/* Follow the actor, in mid air if need be to ensure we land near the actor.*/
-	UPROPERTY(EditAnywhere, Category = "Jump", meta = (DisplayName = "Track Actor", EditCondition = "m_TargetType == EAblJumpToTarget::Actor"))
+	UPROPERTY(EditAnywhere, Category = "Jump", meta = (DisplayName = "Track Actor", EditCondition = "m_TargetType == EAblJumpToTarget::JTT_Actor"))
 	bool m_TrackActor;
 
 	/* The Target Location to move to. */
-	UPROPERTY(EditAnywhere, Category = "Jump", meta = (DisplayName = "Target Location", EditCondition = "m_TargetType == EAblJumpToTarget::Location", AblBindableProperty))
+	UPROPERTY(EditAnywhere, Category = "Jump", meta = (DisplayName = "Target Location", EditCondition = "m_TargetType == EAblJumpToTarget::JTT_Location", AblBindableProperty))
 	FVector m_TargetLocation;
 
 	UPROPERTY()

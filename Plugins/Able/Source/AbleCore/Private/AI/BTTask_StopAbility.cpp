@@ -15,6 +15,7 @@ UBTTask_StopAbility::UBTTask_StopAbility(const FObjectInitializer& ObjectInitial
 {
 	NodeName = "Stop Ability";
 	AbilityKey.SelectedKeyName = FBlackboard::KeySelf;
+	AbilityKey.AllowNoneAsValue(true);
 }
 
 const UAblAbility* UBTTask_StopAbility::GetAbility(const UBlackboardComponent* BlackboardComp) const

@@ -183,6 +183,14 @@ void UAblAbilityComponent::TickComponent(float DeltaTime, enum ELevelTick TickTy
 	// Handle any Pending cancels.
 	HandlePendingCancels();
 
+#if WITH_EDITOR
+	if (ActiveChanged && m_ActiveAbilityInstance.IsValid())
+	{
+		UE_LOG(LogAble, Warning, TEXT("Killed Active Ability manually after it failed to cancel."));
+		m_ActiveAbilityInstance.Reset();
+	}
+#endif
+
 	bool ActiveWasValid = m_ActiveAbilityInstance.IsValid();
 
 	// Handle any Pending abilities.
@@ -365,7 +373,7 @@ bool UAblAbilityComponent::ReplicateSubobjects(class UActorChannel *Channel, cla
 
 	for (UAblAbility* Ability : m_CreatedAbilityInstances)
 	{
-		if (Ability && !Ability->IsPendingKill())
+		if (Ability && IsValid(Ability))
 		{
 			WroteSomething |= Channel->ReplicateSubobject(Ability, *Bunch, *RepFlags);
 		}
@@ -1069,6 +1077,13 @@ EAblAbilityStartResult UAblAbilityComponent::InternalStartAbility(UAblAbilityCon
 		}
 
 		Result = ServerActivatedAbility ? EAblAbilityStartResult::Success : CanActivateAbility(Context);
+
+		if (Result == EAblAbilityStartResult::CannotInterruptCurrentAbility && (m_ActiveAbilityInstance.IsIterationDone() && m_ActiveAbilityInstance.IsDone()))
+		{
+			CancelActiveAbility(EAblAbilityTaskResult::Successful);
+			Result = CanActivateAbility(Context); // Try again.
+		}
+
 		if (Result == EAblAbilityStartResult::AsyncProcessing)
 		{
 			// Save and process it later once the Async query is done.
@@ -1345,11 +1360,6 @@ void UAblAbilityComponent::HandlePendingCancels()
 {
 	for (FAblPendingCancelContext& CancelContext : m_PendingCancels)
 	{
-		if (!CancelContext.IsValid())
-		{
-			continue;
-		}
-
 		if (m_ActiveAbilityInstance.IsValid() && m_ActiveAbilityInstance.GetAbilityNameHash() == CancelContext.GetNameHash())
 		{
 			switch (CancelContext.GetResult())
@@ -1384,7 +1394,11 @@ void UAblAbilityComponent::HandlePendingCancels()
 			{
 				if (m_PassiveAbilityInstances[i].GetAbilityNameHash() == CancelContext.GetNameHash())
 				{
-					m_PassiveAbilityInstances[i].FinishAbility();
+					if (m_PassiveAbilityInstances[i].IsValid())
+					{
+						m_PassiveAbilityInstances[i].FinishAbility();
+					}
+
 					HandleInstanceCleanUp(m_PassiveAbilityInstances[i].GetAbility());
 					m_PassiveAbilityInstances.RemoveAt(i);
 					m_PassivesDirty |= true;
@@ -1448,7 +1462,7 @@ void UAblAbilityComponent::HandleInstanceCleanUp(const UAblAbility& Ability)
 		{
 			UAblAbility* AbilityToRemove = *HeldAbility;
 			m_CreatedAbilityInstances.Remove(AbilityToRemove);
-			AbilityToRemove->MarkPendingKill();
+			AbilityToRemove->MarkAsGarbage();
 		}
 	}
 	break;
@@ -1651,7 +1665,7 @@ void UAblAbilityComponent::ServerActivateAbility_Implementation(const FAblAbilit
 	{
 		if (!Context.GetAbility()->IsPassive())
 		{
-			m_ServerActive = Context;
+			m_ServerActive = FAblAbilityNetworkContext(*LocalContext);
 		}
 		else
 		{

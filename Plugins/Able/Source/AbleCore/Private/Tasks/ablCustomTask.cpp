@@ -84,7 +84,7 @@ UAblAbilityTaskScratchPad* UAblCustomTask::CreateScratchPad(const TWeakObjectPtr
 	TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = GetTaskScratchPadClass(Context.Get());
 	if (UClass* ScratchPadCL = ScratchPadClass.Get())
 	{
-		if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+		if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 		{
 			UAblAbilityTaskScratchPad* ScratchPad = Cast<UAblCustomTaskScratchPad>(Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass));
 			ResetScratchPad(ScratchPad);
@@ -114,7 +114,7 @@ UAblCustomTaskScratchPad* UAblCustomTask::GetScratchPad(UAblAbilityContext* Cont
 
 UAblCustomTaskScratchPad* UAblCustomTask::CreateScratchPadBP_Implementation(UAblAbilityContext* Context) const
 {
-	if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+	if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 	{
 		static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblCustomTaskScratchPad::StaticClass();
 		return Cast<UAblCustomTaskScratchPad>(Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass));

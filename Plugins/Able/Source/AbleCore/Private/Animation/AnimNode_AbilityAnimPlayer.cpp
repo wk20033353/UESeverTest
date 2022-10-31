@@ -17,7 +17,7 @@ FAnimNode_AbilityAnimPlayer::FAnimNode_AbilityAnimPlayer()
 
 }
 
-float FAnimNode_AbilityAnimPlayer::GetCurrentAssetTime()
+float FAnimNode_AbilityAnimPlayer::GetCurrentAssetTime() const
 {
 	if (m_AnimationQueue.Num())
 	{
@@ -27,17 +27,17 @@ float FAnimNode_AbilityAnimPlayer::GetCurrentAssetTime()
 	return 0.0f;
 }
 
-float FAnimNode_AbilityAnimPlayer::GetCurrentAssetLength()
+float FAnimNode_AbilityAnimPlayer::GetCurrentAssetLength() const
 {
 	if (m_AnimationQueue.Num() && m_AnimationQueue[0].AnimationSequence)
 	{
-		return m_AnimationQueue[0].AnimationSequence->SequenceLength;
+		return m_AnimationQueue[0].AnimationSequence->GetPlayLength();
 	}
 
 	return 0.0f;
 }
 
-float FAnimNode_AbilityAnimPlayer::GetCurrentAssetTimePlayRateAdjusted()
+float FAnimNode_AbilityAnimPlayer::GetCurrentAssetTimePlayRateAdjusted() const
 {
 	if (m_AnimationQueue.Num() && m_AnimationQueue[0].AnimationSequence)
 	{
@@ -121,35 +121,37 @@ void FAnimNode_AbilityAnimPlayer::UpdateAssetPlayer(const FAnimationUpdateContex
 			//m_BlendType = EvaluateBlendType::SingleBlendOut;
 		}
 
+		if (!Context.AnimInstanceProxy->IsSkeletonCompatible(CurrentEntry.AnimationSequence->GetSkeleton()))
+		{
+			UE_LOG(LogAble, Warning, TEXT("Invalid Skeleton Asset %s for Animation Sequence %s"), *(Context.AnimInstanceProxy->GetSkeleton()->GetName()), *(CurrentEntry.AnimationSequence->GetName()));
+			return;
+		}
+
+		UE::Anim::FAnimSyncGroupScope& SyncScope = Context.GetMessageChecked<UE::Anim::FAnimSyncGroupScope>();
+		FAnimTickRecord TickRecord(const_cast<UAnimSequence*>(CurrentEntry.AnimationSequence), false, CurrentEntry.PlayRate, BlendValue, CurrentEntry.TimeAccumulator, CurrentEntry.MarkerTickRecord);
+		TickRecord.DeltaTimeRecord = &CurrentEntry.DeltaTimeRecord;
+		TickRecord.GatherContextData(Context);
+		SyncScope.AddTickRecord(TickRecord);
+
 		switch (m_BlendType)
 		{
+			default:
 			case EvaluateBlendType::Single:
 			case EvaluateBlendType::SingleBlendOut:
-			{
-				if (Context.AnimInstanceProxy->IsSkeletonCompatible(CurrentEntry.AnimationSequence->GetSkeleton()))
-				{
-					if (FAnimInstanceProxy* Proxy = Context.AnimInstanceProxy)
-					{
-						FAnimGroupInstance* SyncGroup;
-						FAnimTickRecord& SequenceTickRecord = Proxy->CreateUninitializedTickRecord(SyncGroup, NAME_None);
-						Proxy->MakeSequenceTickRecord(SequenceTickRecord, const_cast<UAnimSequence*>(CurrentEntry.AnimationSequence), false, CurrentEntry.PlayRate, BlendValue, CurrentEntry.TimeAccumulator, CurrentEntry.MarkerTickRecord);
-					}
-				}
-			}
 			break;
 			case EvaluateBlendType::Multi:
 			{
-				if (Context.AnimInstanceProxy->IsSkeletonCompatible(CurrentEntry.AnimationSequence->GetSkeleton()))
+				if (Context.AnimInstanceProxy->IsSkeletonCompatible(NextEntry->AnimationSequence->GetSkeleton()))
 				{
-					if (FAnimInstanceProxy* Proxy = Context.AnimInstanceProxy)
-					{
-						FAnimGroupInstance* SyncGroup;
-						FAnimTickRecord& SequenceTickRecord = Proxy->CreateUninitializedTickRecord(SyncGroup, NAME_None);
-						Proxy->MakeSequenceTickRecord(SequenceTickRecord, const_cast<UAnimSequence*>(CurrentEntry.AnimationSequence), false, CurrentEntry.PlayRate, BlendValue, CurrentEntry.TimeAccumulator, CurrentEntry.MarkerTickRecord);
+					FAnimTickRecord NextTickRecord(const_cast<UAnimSequence*>(NextEntry->AnimationSequence), false, NextEntry->PlayRate, 1.0f - BlendValue, NextEntry->TimeAccumulator, NextEntry->MarkerTickRecord);
+					NextTickRecord.DeltaTimeRecord = &(NextEntry->DeltaTimeRecord);
+					NextTickRecord.GatherContextData(Context);
 
-						FAnimTickRecord& NextSequenceTickRecord = Proxy->CreateUninitializedTickRecord(SyncGroup, NAME_None);
-						Proxy->MakeSequenceTickRecord(NextSequenceTickRecord, const_cast<UAnimSequence*>(NextEntry->AnimationSequence), false, NextEntry->PlayRate, 1.0f - BlendValue, NextEntry->TimeAccumulator, NextEntry->MarkerTickRecord);
-					}
+					SyncScope.AddTickRecord(NextTickRecord);
+				}
+				else
+				{
+					UE_LOG(LogAble, Warning, TEXT("Invalid Skeleton Asset %s for Animation Sequence %s"), *(Context.AnimInstanceProxy->GetSkeleton()->GetName()), *(NextEntry->AnimationSequence->GetName()));
 				}
 			}
 			break;
@@ -192,7 +194,7 @@ void FAnimNode_AbilityAnimPlayer::Evaluate_AnyThread(FPoseContext& Output)
 
 			FCompactPose Poses[2];
 			FBlendedCurve Curves[2];
-			FStackCustomAttributes Attribs[2];
+			UE::Anim::FStackAttributeContainer Attribs[2];
 			float Weights[2] = { 0.0f };
 
 			FAnimationPoseData PoseA(Poses[0], Curves[0], Attribs[0]);
@@ -215,13 +217,8 @@ void FAnimNode_AbilityAnimPlayer::Evaluate_AnyThread(FPoseContext& Output)
 			Weights[0] = 1.0f - AlphaValue;
 			Weights[1] = AlphaValue;
 
-			CurrentEntry.AnimationSequence->GetAnimationPose(PoseA, FAnimExtractContext(CurrentEntry.TimeAccumulator, Proxy->ShouldExtractRootMotion()));
-			if (NextEntry)
-			{
-				NextEntry->AnimationSequence->GetAnimationPose(PoseB, FAnimExtractContext(NextEntry->TimeAccumulator, Proxy->ShouldExtractRootMotion()));
-			}
-
-			FAnimationRuntime::BlendPosesTogether(Poses, Curves, Attribs, Weights, PoseData);
+			FAnimationPoseData AnimationPoseData(Output);
+			FAnimationRuntime::BlendPosesTogether(Poses, Curves, Attribs, Weights, AnimationPoseData);
 		}
 		break;
 		default:
@@ -279,7 +276,7 @@ void FAnimNode_AbilityAnimPlayer::ResetInternalTimeAccumulator()
 		FAbilityAnimEntry& CurrentEntry = m_AnimationQueue[0];
 		if (CurrentEntry.AnimationSequence && (CurrentEntry.PlayRate * CurrentEntry.AnimationSequence->RateScale) < 0.0f)
 		{
-			CurrentEntry.TimeAccumulator = CurrentEntry.AnimationSequence->SequenceLength;
+			CurrentEntry.TimeAccumulator = CurrentEntry.AnimationSequence->GetPlayLength();
 		}
 		else
 		{
@@ -312,10 +309,10 @@ FAbilityAnimEntry::FAbilityAnimEntry(const UAnimSequence* InSequence, const FAlp
 
 void FAbilityAnimEntry::UpdateEntry(float deltaTime)
 {
-	TimeAccumulator = FMath::Clamp(TimeAccumulator, 0.0f, AnimationSequence->SequenceLength);
+	TimeAccumulator = FMath::Clamp(TimeAccumulator, 0.0f, AnimationSequence->GetPlayLength());
 }
 
 float FAbilityAnimEntry::GetTimeRemaining() const
 {
-	return FMath::Max<float>((AnimationSequence->SequenceLength * AnimationSequence->RateScale * PlayRate) - TimeAccumulator, 0.0f);
+	return FMath::Max<float>((AnimationSequence->GetPlayLength() * AnimationSequence->RateScale * PlayRate) - TimeAccumulator, 0.0f);
 }

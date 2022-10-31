@@ -24,12 +24,18 @@ public:
 
 	/* Returns the Asset selected, if there was one. */
 	const UClass* GetSelectedClass() const { return m_Class; }
+
+	const FAssetData& GetSelectedAsset() const { return m_AssetSelected; }
 private:
 	/* Creates the Asset picker. */
 	void MakePicker();
 
 	/* Callback for when a Class is selected by the user. */
 	void OnClassSelected(UClass* InClass);
+
+	void OnAssetSelected(const FAssetData& Asset);
+
+	bool ShouldFilterAsset(const FAssetData& Asset) const;
 
 	/* Callback for when the OK button is clicked. */
 	FReply OkClicked();
@@ -54,5 +60,7 @@ private:
 
 	/* True if Ok was clicked */
 	bool m_bOkClicked;
+
+	FAssetData m_AssetSelected;
 
 };

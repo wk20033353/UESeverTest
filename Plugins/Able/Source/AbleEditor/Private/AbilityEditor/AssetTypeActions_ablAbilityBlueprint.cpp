@@ -4,9 +4,9 @@
 
 #include "AbleEditorPrivate.h"
 
+#include "IAbleEditor.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
-#include "BlueprintEditorModule.h"
 #include "AssetRegistryModule.h"
 
 #include "AbilityEditor/ablAbilityEditor.h"
@@ -35,7 +35,7 @@ FText FAssetTypeActions_AblAbilityBlueprint::GetName() const
 
 FColor FAssetTypeActions_AblAbilityBlueprint::GetTypeColor() const
 {
-	return FColor::Emerald;
+	return FColor(214, 213, 236);
 }
 
 void FAssetTypeActions_AblAbilityBlueprint::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<IToolkitHost> EditWithinLevelEditor)
@@ -48,12 +48,8 @@ void FAssetTypeActions_AblAbilityBlueprint::OpenAssetEditor(const TArray<UObject
 		{
 			if (Blueprint->SkeletonGeneratedClass && Blueprint->GeneratedClass)
 			{
-				// Do we really need a 1:1 relationship with Editor to Asset?
-				TSharedRef<FAblAbilityEditor> Editor(new FAblAbilityEditor());
-				TArray<UBlueprint*> Blueprints;
-				Blueprints.Add(Blueprint);
-
-				Editor->InitAbilityEditor(Mode, EditWithinLevelEditor, Blueprints, ShouldUseDataOnlyEditor(Blueprint));
+				FAbleEditorModule& AbilityEditorModule = FModuleManager::LoadModuleChecked<FAbleEditorModule>("AbleEditor");
+				TSharedRef< FAblAbilityEditor > NewAbilityEditor = AbilityEditorModule.CreateAbilityEditor(Mode, EditWithinLevelEditor, Blueprint, ShouldUseDataOnlyEditor(Blueprint));
 			}
 			else
 			{

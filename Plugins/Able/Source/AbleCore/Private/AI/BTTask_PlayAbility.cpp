@@ -16,6 +16,7 @@ UBTTask_PlayAbility::UBTTask_PlayAbility(const FObjectInitializer& ObjectInitial
 	NodeName = "Play Ability";
 	bNotifyTaskFinished = true;
 	AbilityKey.SelectedKeyName = FBlackboard::KeySelf;
+	AbilityKey.AllowNoneAsValue(true);
 }
 
 const UAblAbility* UBTTask_PlayAbility::GetAbility(const UBlackboardComponent* BlackboardComp) const

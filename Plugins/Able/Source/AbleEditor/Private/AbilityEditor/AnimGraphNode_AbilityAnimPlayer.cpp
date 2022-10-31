@@ -63,18 +63,6 @@ FText UAnimGraphNode_AbilityAnimPlayer::GetTooltipText() const
 FText UAnimGraphNode_AbilityAnimPlayer::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
 	FText Title = LOCTEXT("AbilityAnimPlayerTitle", "Play Ability Animation");
-	if (SyncGroup.GroupName != NAME_None)
-	{
-		FText SyncGroupTitle = LOCTEXT("SyncGroupTitle", "Sync Group");
-		FText SyncGroupName = FText::FromName(SyncGroup.GroupName);
-
-		TArray<FStringFormatArg> FormatArgs;
-		FormatArgs.Add(FStringFormatArg(Title.ToString()));
-		FormatArgs.Add(FStringFormatArg(SyncGroupTitle.ToString()));
-		FormatArgs.Add(FStringFormatArg(SyncGroupName.ToString()));
-		return FText::FromString(FString::Format(TEXT("{0}/n{1}: {2}"), FormatArgs));
-	}
-
 	return Title;
 }
 
@@ -87,10 +75,7 @@ FText UAnimGraphNode_AbilityAnimPlayer::GetMenuCategory() const
 void UAnimGraphNode_AbilityAnimPlayer::BakeDataDuringCompilation(class FCompilerResultsLog& MessageLog)
 {
 	UAnimBlueprint* AnimBlueprint = GetAnimBlueprint();
-	AnimBlueprint->FindOrAddGroup(SyncGroup.GroupName);
-	Node.GroupName = SyncGroup.GroupName;
-	Node.GroupScope = SyncGroup.GroupScope;
-	Node.GroupRole = SyncGroup.GroupRole;
+	AnimBlueprint->FindOrAddGroup(Node.GetGroupName());
 }
 
 bool UAnimGraphNode_AbilityAnimPlayer::DoesSupportTimeForTransitionGetter() const

@@ -117,7 +117,7 @@ void UAblPlayForcedFeedbackTask::OnTaskEnd(const TWeakObjectPtr<const UAblAbilit
 
 UAblAbilityTaskScratchPad* UAblPlayForcedFeedbackTask::CreateScratchPad(const TWeakObjectPtr<UAblAbilityContext>& Context) const
 {
-	if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+	if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 	{
 		static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblPlayForcedFeedbackTaskScratchPad::StaticClass();
 		return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

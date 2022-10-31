@@ -3,13 +3,16 @@
 #include "AbilityEditor/SAbilitySelectPreviewAssetDlg.h"
 
 #include "AbleEditorPrivate.h"
-
+#include "AbleStyle.h"
 #include "AbilityEditor/AblAbilityEditorSettings.h"
 #include "AbilityEditor/SAbilityPreviewAssetClassDlg.h"
 #include "AssetRegistryModule.h"
 #include "Animation/AnimBlueprint.h"
 #include "ContentBrowserDelegates.h"
 #include "ContentBrowserModule.h"
+#include "Engine/Blueprint.h"
+#include "GameFramework/Pawn.h"
+#include "IContentBrowserSingleton.h"
 #include "Editor.h"
 #include "EditorStyleSet.h"
 #include "Engine/Blueprint.h"
@@ -30,6 +33,21 @@ void SAblAbilitySelectPreviewAssetDlg::Construct(const FArguments& InArgs)
 	m_bOkClicked = false;
 	m_ModalWindow = nullptr;
 
+	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
+
+	FAssetPickerConfig AssetPickerConfig;
+
+	AssetPickerConfig.Filter.ClassNames.Add(UBlueprint::StaticClass()->GetFName());
+	AssetPickerConfig.Filter.bRecursiveClasses = true;
+	AssetPickerConfig.SelectionMode = ESelectionMode::SingleToggle;
+	AssetPickerConfig.OnAssetSelected = FOnAssetSelected::CreateSP(this, &SAblAbilitySelectPreviewAssetDlg::OnAssetSelected);
+	AssetPickerConfig.OnShouldFilterAsset = FOnShouldFilterAsset::CreateSP(this, &SAblAbilitySelectPreviewAssetDlg::OnShouldFilterAsset);
+	AssetPickerConfig.OnAssetDoubleClicked = FOnAssetDoubleClicked::CreateSP(this, &SAblAbilitySelectPreviewAssetDlg::OnAssetDoubleClicked);
+	AssetPickerConfig.bAllowNullSelection = false;
+	AssetPickerConfig.ThumbnailLabel = EThumbnailLabel::ClassName;
+	AssetPickerConfig.InitialAssetViewType = EAssetViewType::List;
+	AssetPickerConfig.InitialAssetSelection = FAssetData();
+
 	ChildSlot
 		[
 			SNew(SBorder)
@@ -42,13 +60,43 @@ void SAblAbilitySelectPreviewAssetDlg::Construct(const FArguments& InArgs)
 				[
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Top)
+					.Padding(4.0f, 4.0f)
+					[
+						SNew(SImage).Image(FAbleStyle::GetBrush("AblAbilityEditor.PreviewAssetImage"))
+					]
+
+				+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(4.0f, 4.0f)
+					[
+						SNew(STextBlock)
+						.AutoWrapText(true)
+						.Text(LOCTEXT("AblAbilitySelectPreviewAsset", "The Preview Asset is used as the actor to execute your Ability while in the editor.\n\nChoose a Blueprint Asset to use, the asset must at least inherit from APawn."))
+					]
+
+				+ SVerticalBox::Slot()
 					.FillHeight(1)
 					[
 						SNew(SBorder)
 						.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
 						.Content()
 						[
-							SAssignNew(m_AssetPickerContainer, SVerticalBox)
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							[
+								SNew(STextBlock)
+								.Text(LOCTEXT("SelectPreviewAsset", "Select Asset:"))
+								.ShadowOffset(FVector2D(1.0f, 1.0f))
+							]
+						+ SVerticalBox::Slot()
+							.AutoHeight()
+							[
+								ContentBrowserModule.Get().CreateAssetPicker(AssetPickerConfig)
+							]
 						]
 					]
 
@@ -83,8 +131,6 @@ void SAblAbilitySelectPreviewAssetDlg::Construct(const FArguments& InArgs)
 				]
 			]
 		];
-
-	MakePicker();
 }
 
 bool SAblAbilitySelectPreviewAssetDlg::DoModal()
@@ -104,105 +150,29 @@ bool SAblAbilitySelectPreviewAssetDlg::DoModal()
 	return m_bOkClicked;
 }
 
-void SAblAbilitySelectPreviewAssetDlg::MakePicker()
-{
-	// Query for the class to look for first...
-	TSharedRef<SAblAbilityPreviewAssetClassDlg> AssetClassDialog = SNew(SAblAbilityPreviewAssetClassDlg);
-	AssetClassDialog->DoModal();
-
-	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
-	const UAblAbilityEditorSettings* EditorSettings = GetDefault<UAblAbilityEditorSettings>();
-	check(EditorSettings);
-
-	// Configure filter for asset picker
-	FAssetPickerConfig Config;
-	Config.OnAssetSelected = FOnAssetSelected::CreateSP(this, &SAblAbilitySelectPreviewAssetDlg::OnAssetSelected);
-	Config.OnAssetDoubleClicked = FOnAssetDoubleClicked::CreateSP(this, &SAblAbilitySelectPreviewAssetDlg::OnAssetDoubleClicked);
-
-	if (const UClass* SelectedClass = AssetClassDialog->GetSelectedClass())
-	{
-		// User selected a specific class.
-		Config.Filter.ClassNames.Add(SelectedClass->GetFName());
-	}
-	else
-	{
-		if (EditorSettings->m_AllowStaticMeshes)
-		{
-			Config.Filter.ClassNames.Add(UStaticMesh::StaticClass()->GetFName());
-		}
-
-		if (EditorSettings->m_AllowSkeletalMeshes)
-		{
-			Config.Filter.ClassNames.Add(USkeletalMesh::StaticClass()->GetFName());
-		}
-
-		if (EditorSettings->m_AllowAnimationBlueprints)
-		{
-			Config.Filter.ClassNames.Add(UAnimBlueprint::StaticClass()->GetFName());
-		}
-
-		if (EditorSettings->m_AllowPawnBlueprints)
-		{
-			Config.Filter.ClassNames.Add(UBlueprint::StaticClass()->GetFName());
-			Config.OnShouldFilterAsset = FOnShouldFilterAsset::CreateSP(this, &SAblAbilitySelectPreviewAssetDlg::OnShouldFilterAsset);
-		}
-	}
-
-
-	Config.bCanShowFolders = true;
-	Config.bPreloadAssetsForContextMenu = true;
-
-	m_AssetPickerContainer->AddSlot()
-		.AutoHeight()
-		[
-			SNew(STextBlock)
-			.Text(LOCTEXT("SelectAnimationAsset", "Select Asset:"))
-		.ShadowOffset(FVector2D(1.0f, 1.0f))
-		];
-	m_AssetPickerContainer->AddSlot()
-		[
-			ContentBrowserModule.Get().CreateAssetPicker(Config)
-		];
-}
-
 void SAblAbilitySelectPreviewAssetDlg::OnAssetSelected(const FAssetData& AssetData)
 {
-	m_Asset = AssetData.GetAsset();
+	m_AssetSelected = AssetData.GetAsset();
 }
 
 void SAblAbilitySelectPreviewAssetDlg::OnAssetDoubleClicked(const FAssetData& AssetData)
 {
-	m_Asset = AssetData.GetAsset();
+	m_AssetSelected = AssetData.GetAsset();
 	m_bOkClicked = true;
 	CloseDialog();
 }
 
 bool SAblAbilitySelectPreviewAssetDlg::OnShouldFilterAsset(const FAssetData& AssetData) const
 {
-	if (const UClass* AssetClass = AssetData.GetClass())
+	if (AssetData.AssetClass == UBlueprint::StaticClass()->GetFName())
 	{
-		if (AssetClass->IsChildOf(UBlueprint::StaticClass()))
+		if (UBlueprint* LoadedBlueprint = Cast<UBlueprint>(AssetData.GetAsset()))
 		{
-			if (AssetClass->IsChildOf(UAnimBlueprint::StaticClass()))
-			{
-				return false;
-			}
-
-			if (const UBlueprint* BlueprintAsset = Cast<UBlueprint>(AssetData.GetAsset()))
-			{
-				if (BlueprintAsset->GeneratedClass)
-				{
-					if (BlueprintAsset->GeneratedClass->IsChildOf(APawn::StaticClass()))
-					{
-						return false;
-					}
-				}
-			}
-
-			return true;
+			return !(*(LoadedBlueprint->GeneratedClass) && LoadedBlueprint->GeneratedClass->IsChildOf(APawn::StaticClass()));
 		}
 	}
-	return false;
+
+	return true;
 }
 
 FReply SAblAbilitySelectPreviewAssetDlg::OkClicked()

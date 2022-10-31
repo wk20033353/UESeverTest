@@ -207,7 +207,7 @@ UAblAbilityTaskScratchPad* UAblPlaySoundTask::CreateScratchPad(const TWeakObject
 {
 	if (m_DestroyOnEnd)
 	{
-		if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+		if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 		{
 			static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblPlaySoundTaskScratchPad::StaticClass();
 			return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

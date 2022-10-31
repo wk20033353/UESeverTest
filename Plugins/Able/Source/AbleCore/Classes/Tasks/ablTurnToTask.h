@@ -67,7 +67,7 @@ public:
 	virtual bool NeedsTick() const override { return !IsSingleFrame(); }
 
 	/* Returns the realm this Task belongs to. */
-	virtual EAblAbilityTaskRealm GetTaskRealm() const override { return EAblAbilityTaskRealm::ATR_ClientAndServer; } // Client for Auth client, Server for AIs/Proxies.
+	virtual EAblAbilityTaskRealm GetTaskRealm() const override { return m_TaskRealm; } // Client for Auth client, Server for AIs/Proxies.
 
 	/* Creates the Scratchpad for this Task. */
 	virtual UAblAbilityTaskScratchPad* CreateScratchPad(const TWeakObjectPtr<UAblAbilityContext>& Context) const;
@@ -96,6 +96,9 @@ public:
 
 	// UObject Overrides
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+
+	/* Returns true if the user is allowed to edit the realm for this Task. */
+	virtual bool CanEditTaskRealm() const override { return true; }
 #endif
 protected:
 	/* Helper method to get our Target rotation. */
@@ -141,6 +144,10 @@ protected:
 	/* The blend to use when we are turning. */
 	UPROPERTY(EditAnywhere, Category = "Turn To", meta = (DisplayName = "Blend"))
 	FAlphaBlend m_Blend;
+
+	/* What realm, server or client, to execute this task. If your game isn't networked - this field is ignored. */
+	UPROPERTY(EditAnywhere, Category = "Realm", meta = (DisplayName = "Realm"))
+	TEnumAsByte<EAblAbilityTaskRealm> m_TaskRealm;
 };
 
 #undef LOCTEXT_NAMESPACE

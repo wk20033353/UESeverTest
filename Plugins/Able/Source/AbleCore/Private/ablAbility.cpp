@@ -8,8 +8,8 @@
 #include "Engine/NetDriver.h"
 #include "Misc/Crc.h"
 #include "Tasks/ablPlayAnimationTask.h"
-
 #include "Tasks/IAblAbilityTask.h"
+#include "UObject/ObjectSaveContext.h"
 
 #define LOCTEXT_NAMESPACE "AblAbility"
 
@@ -60,13 +60,13 @@ void UAblAbility::PostInitProperties()
 	Super::PostInitProperties();
 }
 
-void UAblAbility::PreSave(const class ITargetPlatform* TargetPlatform)
+void UAblAbility::PreSave(FObjectPreSaveContext SaveContext)
 {
 #if WITH_EDITOR
 	SanitizeTasks();
 	SortTasks();
 #endif
-	Super::PreSave(TargetPlatform);
+	Super::PreSave(SaveContext);
 }
 
 void UAblAbility::PostLoad()
@@ -548,11 +548,6 @@ void UAblAbility::CopyInheritedTasks(const UAblAbility& ParentObject)
 bool UAblAbility::FixUpObjectFlags()
 {
 	bool modified = false;
-
-	if (m_Targeting)
-	{
-		modified |= m_Targeting->FixUpObjectFlags();
-	}
 
 	for (UAblChannelingBase* ChannelCond : m_ChannelConditions)
 	{

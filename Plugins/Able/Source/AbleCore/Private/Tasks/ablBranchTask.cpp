@@ -133,7 +133,7 @@ void UAblBranchTask::OnTaskEnd(const TWeakObjectPtr<const UAblAbilityContext>& C
 
 UAblAbilityTaskScratchPad* UAblBranchTask::CreateScratchPad(const TWeakObjectPtr<UAblAbilityContext>& Context) const
 {
-	if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+	if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 	{
 		static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblBranchTaskScratchPad::StaticClass();
 		return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

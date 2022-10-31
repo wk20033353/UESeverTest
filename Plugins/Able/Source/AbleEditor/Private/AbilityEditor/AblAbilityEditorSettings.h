@@ -55,32 +55,32 @@ public:
 	FSoftObjectPath m_PreviewAsset;
 
 	/* The target asset used in the Viewport.*/
-	UPROPERTY(config, EditAnywhere, Category = "Preview Asset", meta = (DisplayName = "Allowed Classes"))
-	TArray<UClass*> m_PreviewAllowedClasses;
+	//UPROPERTY(config, EditAnywhere, Category = "Preview Asset", meta = (DisplayName = "Allowed Preview Classes"))
+	//TArray<UClass*> m_PreviewAllowedClasses;
 
 	/* The target asset used in the Viewport.*/
 	UPROPERTY(config, EditAnywhere, Category = "Target Asset", meta = (DisplayName = "Target Asset"))
 	FSoftObjectPath m_TargetAsset;
 
 	/* The target asset used in the Viewport.*/
-	UPROPERTY(config, EditAnywhere, Category = "Target Asset", meta = (DisplayName = "Allowed Classes"))
-	TArray<UClass*> m_TargetAllowedClasses;
+	//UPROPERTY(config, EditAnywhere, Category = "Target Asset", meta = (DisplayName = "Allowed Target Classes"))
+	//TArray<UClass*> m_TargetAllowedClasses;
 
 	/* If true, Static Meshes will be selectable when choosing a Preview Asset. */
-	UPROPERTY(config, EditAnywhere, Category ="Preview Asset", meta = (DisplayName = "Allow Static Meshes"))
-	bool m_AllowStaticMeshes;
+	//UPROPERTY(config, EditAnywhere, Category ="Preview Asset", meta = (DisplayName = "Allow Static Meshes"))
+	//bool m_AllowStaticMeshes;
 
 	/* If true, Skeletal Meshes will be selectable when choosing a Preview Asset. */
-	UPROPERTY(config, EditAnywhere, Category = "Preview Asset", meta = (DisplayName = "Allow Skeletal Meshes"))
-	bool m_AllowSkeletalMeshes;
+	//UPROPERTY(config, EditAnywhere, Category = "Preview Asset", meta = (DisplayName = "Allow Skeletal Meshes"))
+	//bool m_AllowSkeletalMeshes;
 
 	/* If true, Animation Blueprints will be selectable when choosing a Preview Asset. */
-	UPROPERTY(config, EditAnywhere, Category = "Preview Asset", meta = (DisplayName = "Allow Animation Blueprints"))
-	bool m_AllowAnimationBlueprints;
+	//UPROPERTY(config, EditAnywhere, Category = "Preview Asset", meta = (DisplayName = "Allow Animation Blueprints"))
+	//bool m_AllowAnimationBlueprints;
 
 	/* If true, Blueprints that inherit from Pawn (Pawns and Characters for example) will be selectable when choosing a Preview Asset. */
-	UPROPERTY(config, EditAnywhere, Category = "Preview Asset", meta = (DisplayName = "Allow Pawn Blueprints"))
-	bool m_AllowPawnBlueprints;
+	//UPROPERTY(config, EditAnywhere, Category = "Preview Asset", meta = (DisplayName = "Allow Pawn Blueprints"))
+	//bool m_AllowPawnBlueprints;
 
 	/* If true, Able will use the value Preview Component Rotation value to rotate the mesh. */
 	UPROPERTY(config, EditAnywhere, Category = "Preview Asset", meta = (DisplayName = "Mesh Rotation"))

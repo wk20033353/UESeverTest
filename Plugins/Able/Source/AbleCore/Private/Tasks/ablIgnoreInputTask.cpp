@@ -164,7 +164,7 @@ void UAblIgnoreInputTask::OnTaskEnd(const TWeakObjectPtr<const UAblAbilityContex
 
 UAblAbilityTaskScratchPad* UAblIgnoreInputTask::CreateScratchPad(const TWeakObjectPtr<UAblAbilityContext>& Context) const
 {
-	if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+	if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 	{
 		static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblIgnoreInputTaskScratchPad::StaticClass();
 		return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

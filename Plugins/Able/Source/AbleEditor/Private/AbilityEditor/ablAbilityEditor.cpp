@@ -114,12 +114,12 @@ void FAblAbilityEditor::InitAbilityEditor(const EToolkitMode::Type Mode, const T
 
 	if (!Toolbar.IsValid())
 	{
-		Toolbar = MakeShareable(new FBlueprintEditorToolbar(SharedThis(this)));
+		Toolbar = MakeShareable(new FBlueprintEditorToolbar(Editor));
 	}
 
 	if (!m_AbilityEditorToolbar.IsValid())
 	{
-		m_AbilityEditorToolbar = MakeShareable(new FAblAbilityEditorToolbar());
+		m_AbilityEditorToolbar = MakeShareable(new FAblAbilityEditorToolbar(Editor));
 	}
 
 	TArray<UObject*> ObjectsBeingEditted;
@@ -854,10 +854,10 @@ void FAblAbilityEditor::SetPreviewAsset()
 	TSharedPtr<SAblAbilitySelectPreviewAssetDlg> PickerDlg = SNew(SAblAbilitySelectPreviewAssetDlg);
 	if (PickerDlg->DoModal())
 	{
-		const TWeakObjectPtr<UObject>& SelectedAsset = PickerDlg->GetPreviewAsset();
+		const FAssetData& SelectedAsset = PickerDlg->GetSelectedAsset();
 		if (SelectedAsset.IsValid())
 		{
-			GetEditorSettings().m_PreviewAsset = FSoftObjectPath(SelectedAsset.Get());
+			GetEditorSettings().m_PreviewAsset = SelectedAsset.ToSoftObjectPath();
 			GetEditorSettings().SaveConfig();
 
 			SpawnPreviewActor();
@@ -1349,11 +1349,11 @@ void FAblAbilityEditor::ExtendToolbar()
 
 	m_ToolbarExtender = MakeShareable(new FExtender);
 
-	m_AbilityEditorToolbar->SetupToolbar(m_ToolbarExtender, SharedThis(this));
+	m_AbilityEditorToolbar->SetupToolbar(m_ToolbarExtender);
 
 	if (GetCurrentMode() == FAblAbilityEditorModes::AbilityTimelineMode)
 	{
-		m_AbilityEditorToolbar->AddTimelineToolbar(m_ToolbarExtender, SharedThis(this));
+		m_AbilityEditorToolbar->AddTimelineToolbar(m_ToolbarExtender);
 	}
 
 	AddToolbarExtender(m_ToolbarExtender);

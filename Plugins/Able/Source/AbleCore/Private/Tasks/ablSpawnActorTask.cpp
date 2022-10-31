@@ -211,7 +211,7 @@ UAblAbilityTaskScratchPad* UAblSpawnActorTask::CreateScratchPad(const TWeakObjec
 {
 	if (m_DestroyAtEnd)
 	{
-		if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+		if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 		{
 			static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblSpawnActorTaskScratchPad::StaticClass();
 			return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

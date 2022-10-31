@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Editor/Kismet/Public/WorkflowOrientedApp/WorkflowTabFactory.h"
+#include "WorkflowOrientedApp/WorkflowTabFactory.h"
 #include "Editor/KismetWidgets/Public/SSingleObjectDetailsPanel.h"
 #include "AbilityEditor/SAbilityDetailView.h"
 #include "IDocumentation.h"

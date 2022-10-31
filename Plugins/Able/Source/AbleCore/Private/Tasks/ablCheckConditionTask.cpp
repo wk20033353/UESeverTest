@@ -92,7 +92,7 @@ void UAblCheckConditionTask::OnTaskTick(const TWeakObjectPtr<const UAblAbilityCo
 
 UAblAbilityTaskScratchPad* UAblCheckConditionTask::CreateScratchPad(const TWeakObjectPtr<UAblAbilityContext>& Context) const
 {
-	if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+	if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 	{
 		static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblCheckConditionTaskScratchPad::StaticClass();
 		return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

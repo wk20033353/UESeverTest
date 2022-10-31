@@ -108,7 +108,7 @@ UAblAbilityTaskScratchPad* UAblSetGameplayTagTask::CreateScratchPad(const TWeakO
 {
 	if (m_RemoveOnEnd)
 	{
-		if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+		if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 		{
 			static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblSetGameplayTagTaskScratchPad::StaticClass();
 			return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

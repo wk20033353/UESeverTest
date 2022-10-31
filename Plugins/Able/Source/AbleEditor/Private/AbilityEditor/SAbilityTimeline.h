@@ -35,6 +35,8 @@ public:
 	virtual bool SupportsKeyboardFocus() const override { return true; }
 	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
 private:
+	float RoundFloat(float in, int32 numDecimalPoints) const;
+
 	/* Callback for when the Editor is refreshed. */
 	void OnRefresh();
 

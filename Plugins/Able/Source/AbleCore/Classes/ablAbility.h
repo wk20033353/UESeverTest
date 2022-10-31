@@ -195,7 +195,7 @@ public:
 	void PostInitProperties() override;
 	void PostLoad() override;
 	virtual bool IsSupportedForNetworking() const override;
-	virtual void PreSave(const class ITargetPlatform* TargetPlatform) override;
+	virtual void PreSave(FObjectPreSaveContext SaveContext) override;
 	virtual UWorld* GetWorld() const override;
 	virtual int32 GetFunctionCallspace(UFunction* Function, FFrame* Stack) override;
 	virtual bool CallRemoteFunction(UFunction* Function, void* Parameters, FOutParmRec* OutParms, FFrame* Stack) override;
@@ -288,12 +288,12 @@ public:
 	FORCEINLINE bool RequiresTarget() const { return m_RequiresTarget; }
 
 	/**
-	* Returns the estimated range of the Ability.
+	* Returns the estimated range of the Ability. Ignored unless "Requires Target" is set to true.
 	*
 	* @return the estimated range of the Ability.
 	*/
     UFUNCTION(BlueprintPure, Category = "Able|Ability")
-	FORCEINLINE float GetRange() const { return m_RequiresTarget ? m_Targeting->GetRange() : 0.0f; }
+	FORCEINLINE float GetRange() const { return m_Targeting ? m_Targeting->GetRange() : 0.0f; }
 	
 	/**
 	* Returns the calculated Cooldown for the Ability.

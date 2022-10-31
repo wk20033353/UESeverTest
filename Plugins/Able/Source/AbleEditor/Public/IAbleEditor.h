@@ -3,34 +3,44 @@
 #pragma once
 
 #include "Modules/ModuleManager.h"
+#include "Modules/ModuleInterface.h"
+#include "Engine/Blueprint.h"
+#include "Framework/Commands/UICommandList.h"
+#include "Toolkits/AssetEditorToolkit.h"
+#include "WorkflowOrientedApp/WorkflowCentricApplication.h"
+#include "AssetTools/Public/AssetTypeCategories.h"
 
-/*
- * Interface for the Able Editor.
- */
-class IAbleEditor : public IModuleInterface
+class UAblAbility;
+class FAblAbilityEditor;
+class IAssetTools;
+class IAssetTypeActions;
+class FAblPlayAnimationAddedHandler;
+class FAbleEditorModule : public IModuleInterface
 {
-
 public:
+	/** IModuleInterface implementation */
+	virtual void StartupModule() override;
+	virtual void ShutdownModule() override;
 
-	/**
-	 * @return Returns singleton instance, loading the module on demand if needed
-	 */
-	static inline IAbleEditor& Get()
-	{
-		return FModuleManager::LoadModuleChecked< IAbleEditor >( "AbleEditor" );
-	}
+	uint32 GetAbleAssetCategory() const { return m_AbleAssetCategory; }
 
-	/**
-	 * Checks to see if this module is loaded and ready.  It is only valid to call Get() if IsAvailable() returns true.
-	 *
-	 * @return True if the module is loaded and ready to use
-	 */
-	static inline bool IsAvailable()
-	{
-		return FModuleManager::Get().IsModuleLoaded( "AbleEditor" );
-	}
+	TSharedRef<FAblAbilityEditor> CreateAbilityEditor(const EToolkitMode::Type Mode, const TSharedPtr< IToolkitHost >& InitToolkitHost, UBlueprint* Blueprint, bool bShouldOpenInDefaultsMode = false);
+	TSharedRef<FAblAbilityEditor> CreateAbilityEditor(const EToolkitMode::Type Mode, const TSharedPtr< IToolkitHost >& InitToolkitHost, const TArray< UBlueprint* >& BlueprintsToEdit, bool bShouldOpenInDefaultsMode = true);
 
-	/* Returns the Able Category for Able specific assets. */
-	virtual uint32 GetAbleAssetCategory() const = 0;
+	/** Get all ability editor instances */
+	TArray<TSharedRef<FAblAbilityEditor>> GetAbilityEditors() const;
+
+private:
+	void RegisterAssetTypes(IAssetTools& AssetTools);
+	void RegisterSettings();
+	void UnregisterSettings();
+
+	EAssetTypeCategories::Type m_AbleAssetCategory;
+
+	TArray<TSharedPtr<IAssetTypeActions>> m_CreatedAssetTypeActions;
+
+	TSharedPtr<FAblPlayAnimationAddedHandler> m_PlayAnimationTaskHandler;
+
+	/** List of all blueprint editors that were created. */
+	TArray<TWeakPtr<FAblAbilityEditor>> m_AbilityEditors;
 };
-

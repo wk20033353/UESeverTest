@@ -208,7 +208,7 @@ UAblAbilityTaskScratchPad* UAblCollisionQueryTask::CreateScratchPad(const TWeakO
 {
 	if(m_QueryShape && m_QueryShape->IsAsync())
 	{
-		if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+		if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 		{
 			static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblCollisionQueryTaskScratchPad::StaticClass();
 			return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

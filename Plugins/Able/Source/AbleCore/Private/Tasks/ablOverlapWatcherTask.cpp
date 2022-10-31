@@ -133,7 +133,7 @@ bool UAblOverlapWatcherTask::IsDone(const TWeakObjectPtr<const UAblAbilityContex
 
 UAblAbilityTaskScratchPad* UAblOverlapWatcherTask::CreateScratchPad(const TWeakObjectPtr<UAblAbilityContext>& Context) const
 {
-	if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+	if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 	{
 		static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblOverlapWatcherTaskScratchPad::StaticClass();
 		return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

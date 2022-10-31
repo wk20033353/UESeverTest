@@ -288,7 +288,7 @@ UAblAbilityTaskScratchPad* UAblRayCastQueryTask::CreateScratchPad(const TWeakObj
 {
 	if (IsAsyncFriendly() && UAbleSettings::IsAsyncEnabled())
 	{
-		if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+		if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 		{
 			static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblRayCastQueryTaskScratchPad::StaticClass();
 			return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

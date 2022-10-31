@@ -165,7 +165,7 @@ void UAblSetShaderParameterTask::OnTaskEnd(const TWeakObjectPtr<const UAblAbilit
 
 UAblAbilityTaskScratchPad* UAblSetShaderParameterTask::CreateScratchPad(const TWeakObjectPtr<UAblAbilityContext>& Context) const
 {
-	if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+	if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 	{
 		static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblSetShaderParameterTaskScratchPad::StaticClass();
 		return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

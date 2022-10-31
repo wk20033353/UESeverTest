@@ -112,7 +112,7 @@ UAblAbilityTaskScratchPad* UAblSetCollisionChannelTask::CreateScratchPad(const T
 {
 	if (m_RestoreOnEnd)
 	{
-		if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+		if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 		{
 			static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblSetCollisionChannelTaskScratchPad::StaticClass();
 			return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

@@ -712,7 +712,7 @@ void UAblCollisionShapeCone::ProcessAsyncOverlaps(const TWeakObjectPtr<const UAb
 			{
 				if (m_3DSlice)
 				{
-					ValidEntry = FVector::DistSquared(ResultLocation, QueryLocation) < HeightSqr;
+					ValidEntry = FMath::Abs(ResultLocation.Z - QueryLocation.Z) <= Height;
 				}
 				else
 				{

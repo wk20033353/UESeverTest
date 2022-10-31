@@ -1,27 +1,40 @@
 // Copyright (c) Extra Life Studios, LLC. All rights reserved.
 
 #include "ablSubSystem.h"
+#include "ablAbility.h"
 #include "ablAbilityContext.h"
 #include "ablSettings.h"
 
-UAblScratchPadSubsystem::UAblScratchPadSubsystem(const FObjectInitializer& ObjectInitializer)
-: m_Settings(nullptr)
+UAblAbilityUtilitySubsystem::UAblAbilityUtilitySubsystem(const FObjectInitializer& ObjectInitializer)
+	: m_Settings(nullptr)
 {
 
 }
 
-UAblScratchPadSubsystem::~UAblScratchPadSubsystem()
+UAblAbilityUtilitySubsystem::~UAblAbilityUtilitySubsystem()
 {
 
 }
 
-void UAblScratchPadSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+void UAblAbilityUtilitySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+
 	m_Settings = GetDefault<UAbleSettings>();
+	if (m_Settings && m_Settings->GetInitialContextPoolSize() > 0)
+	{
+		m_AvailableContexts.Reserve(m_Settings->GetInitialContextPoolSize());
+		m_AllocatedContexts.Reserve(m_Settings->GetInitialContextPoolSize());
+		for (uint32 i = 0; i < m_Settings->GetInitialContextPoolSize(); ++i)
+		{
+			UAblAbilityContext* Context = NewObject<UAblAbilityContext>(this);
+			m_AllocatedContexts.Add(Context);
+			m_AvailableContexts.Push(Context);
+		}
+	}
 }
 
-UAblAbilityTaskScratchPad* UAblScratchPadSubsystem::FindOrConstructTaskScratchPad(TSubclassOf<UAblAbilityTaskScratchPad>& Class)
+UAblAbilityTaskScratchPad* UAblAbilityUtilitySubsystem::FindOrConstructTaskScratchPad(TSubclassOf<UAblAbilityTaskScratchPad>& Class)
 {
 	if (m_Settings && !m_Settings->GetAllowScratchPadReuse())
 	{
@@ -52,7 +65,7 @@ UAblAbilityTaskScratchPad* UAblScratchPadSubsystem::FindOrConstructTaskScratchPa
 	return OutInstance;
 }
 
-UAblAbilityScratchPad* UAblScratchPadSubsystem::FindOrConstructAbilityScratchPad(TSubclassOf<UAblAbilityScratchPad>& Class)
+UAblAbilityScratchPad* UAblAbilityUtilitySubsystem::FindOrConstructAbilityScratchPad(TSubclassOf<UAblAbilityScratchPad>& Class)
 {
 	if (m_Settings && !m_Settings->GetAllowScratchPadReuse())
 	{
@@ -83,7 +96,7 @@ UAblAbilityScratchPad* UAblScratchPadSubsystem::FindOrConstructAbilityScratchPad
 	return OutInstance;
 }
 
-void UAblScratchPadSubsystem::ReturnTaskScratchPad(UAblAbilityTaskScratchPad* Scratchpad)
+void UAblAbilityUtilitySubsystem::ReturnTaskScratchPad(UAblAbilityTaskScratchPad* Scratchpad)
 {
 	if (m_Settings)
 	{
@@ -107,7 +120,7 @@ void UAblScratchPadSubsystem::ReturnTaskScratchPad(UAblAbilityTaskScratchPad* Sc
 	// If we don't have a bucket then we somehow mixed worlds... which doesn't make sense. Just let it release through the GC system.
 }
 
-void UAblScratchPadSubsystem::ReturnAbilityScratchPad(UAblAbilityScratchPad* Scratchpad)
+void UAblAbilityUtilitySubsystem::ReturnAbilityScratchPad(UAblAbilityScratchPad* Scratchpad)
 {
 	if (m_Settings)
 	{
@@ -131,7 +144,7 @@ void UAblScratchPadSubsystem::ReturnAbilityScratchPad(UAblAbilityScratchPad* Scr
 	// If we don't have a bucket then we somehow mixed worlds... which doesn't make sense. Just let it release through the GC system.
 }
 
-FAblTaskScratchPadBucket* UAblScratchPadSubsystem::GetTaskBucketByClass(TSubclassOf<UAblAbilityTaskScratchPad>& Class)
+FAblTaskScratchPadBucket* UAblAbilityUtilitySubsystem::GetTaskBucketByClass(TSubclassOf<UAblAbilityTaskScratchPad>& Class)
 {
 	if (!Class.Get())
 	{
@@ -149,7 +162,7 @@ FAblTaskScratchPadBucket* UAblScratchPadSubsystem::GetTaskBucketByClass(TSubclas
 	return nullptr;
 }
 
-FAblAbilityScratchPadBucket* UAblScratchPadSubsystem::GetAbilityBucketByClass(TSubclassOf<UAblAbilityScratchPad>& Class)
+FAblAbilityScratchPadBucket* UAblAbilityUtilitySubsystem::GetAbilityBucketByClass(TSubclassOf<UAblAbilityScratchPad>& Class)
 {
 	if (!Class.Get())
 	{
@@ -167,7 +180,7 @@ FAblAbilityScratchPadBucket* UAblScratchPadSubsystem::GetAbilityBucketByClass(TS
 	return nullptr;
 }
 
-uint32 UAblScratchPadSubsystem::GetTotalScratchPads() const
+uint32 UAblAbilityUtilitySubsystem::GetTotalScratchPads() const
 {
 	uint32 TotalAmount = 0;
 
@@ -184,39 +197,13 @@ uint32 UAblScratchPadSubsystem::GetTotalScratchPads() const
 	return TotalAmount;
 }
 
-UAblAbilityContextSubsystem::UAblAbilityContextSubsystem(const FObjectInitializer& ObjectInitializer)
-: m_Settings(nullptr)
-{
-
-}
-
-UAblAbilityContextSubsystem::~UAblAbilityContextSubsystem()
-{
-
-}
-
-void UAblAbilityContextSubsystem::Initialize(FSubsystemCollectionBase& Collection)
-{
-	Super::Initialize(Collection);
-
-	m_Settings = GetDefault<UAbleSettings>();
-	if (m_Settings && m_Settings->GetInitialContextPoolSize() > 0)
-	{
-		m_AvailableContexts.Reserve(m_Settings->GetInitialContextPoolSize());
-		for (uint32 i = 0; i < m_Settings->GetInitialContextPoolSize(); ++i)
-		{
-			UAblAbilityContext* Context = NewObject<UAblAbilityContext>(this);
-			m_AvailableContexts.Push(Context);
-		}
-	}
-}
-
-UAblAbilityContext* UAblAbilityContextSubsystem::FindOrConstructContext()
+UAblAbilityContext* UAblAbilityUtilitySubsystem::FindOrConstructContext()
 {
 	UAblAbilityContext* Context = nullptr;
 	if (m_Settings && !m_Settings->GetAllowAbilityContextReuse())
 	{
 		Context = NewObject<UAblAbilityContext>(this);
+		m_AllocatedContexts.Add(Context);
 	}
 	else
 	{
@@ -227,13 +214,14 @@ UAblAbilityContext* UAblAbilityContextSubsystem::FindOrConstructContext()
 		else
 		{
 			Context = NewObject<UAblAbilityContext>(this);
+			m_AllocatedContexts.Add(Context);
 		}
 	}
 
 	return Context;
 }
 
-void UAblAbilityContextSubsystem::ReturnContext(UAblAbilityContext* Context)
+void UAblAbilityUtilitySubsystem::ReturnContext(UAblAbilityContext* Context)
 {
 	if (m_Settings && !m_Settings->GetAllowAbilityContextReuse())
 	{

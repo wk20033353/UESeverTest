@@ -26,24 +26,24 @@ FAppAbilityEditorTimelineMode::FAppAbilityEditorTimelineMode(TSharedPtr<class FA
 {
 	m_AbilityEditor = AbilityEditor;
 	
-	TabLayout = FTabManager::NewLayout("Ability_AbilityTimelineEditMode_Layout_v9")
+	TabLayout = FTabManager::NewLayout("Ability_AbilityTimelineEditMode_Layout_v10")
 		->AddArea
 		(
 			FTabManager::NewPrimaryArea()
 			->SetOrientation(Orient_Vertical)
-			->Split
-			(
-				// Top toolbar
-				FTabManager::NewStack()
-				->SetSizeCoefficient(0.2f)
-				->SetHideTabWell(true)
-				->AddTab(AbilityEditor->GetToolbarTabId(), ETabState::OpenedTab)
-			)
+			//->Split
+			//(
+			//	// Top toolbar
+			//	FTabManager::NewStack()
+			//	->SetSizeCoefficient(0.2f)
+			//	->SetHideTabWell(true)
+			//	->AddTab(AbilityEditor->GetToolbarTabId(), ETabState::OpenedTab)
+			//)
 			->Split
 			(
 				FTabManager::NewSplitter()
 				->SetOrientation(Orient_Horizontal)
-				->SetSizeCoefficient(0.8f)
+				//->SetSizeCoefficient(0.8f)
 				->Split
 				(
 					FTabManager::NewStack()
@@ -91,7 +91,7 @@ FAppAbilityEditorTimelineMode::FAppAbilityEditorTimelineMode(TSharedPtr<class FA
 	m_AbilityEditorTabFactories.RegisterFactory(MakeShareable(new FAblAbilityEditorSettingsSummoner(AbilityEditor)));
 
 	ToolbarExtender = MakeShareable(new FExtender);
-	m_AbilityEditor.Pin()->GetAbilityToolbar()->AddTimelineToolbar(ToolbarExtender, AbilityEditor);
+	m_AbilityEditor.Pin()->GetAbilityToolbar()->AddTimelineToolbar(ToolbarExtender);
 }
 
 
@@ -124,14 +124,6 @@ FAppAbilityEditorBlueprintMode::FAppAbilityEditorBlueprintMode(TSharedPtr<class 
 		(
 			FTabManager::NewPrimaryArea()
 			->SetOrientation(Orient_Vertical)
-			->Split
-			(
-				// Top toolbar
-				FTabManager::NewStack()
-				->SetSizeCoefficient(0.2f)
-				->SetHideTabWell(true)
-				->AddTab(AbilityEditor->GetToolbarTabId(), ETabState::OpenedTab)
-			)
 			->Split
 			(
 				FTabManager::NewSplitter()

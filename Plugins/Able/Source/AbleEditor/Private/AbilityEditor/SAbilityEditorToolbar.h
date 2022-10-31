@@ -9,27 +9,32 @@
 struct FAssetData;
 class FAblAbilityEditor;
 class FAssetThumbnailPool;
+class UAblAbilityEditorSettings;
 
 /* Ability Editor Toolbar */
 class FAblAbilityEditorToolbar : public TSharedFromThis<FAblAbilityEditorToolbar>
 {
 public:
+	FAblAbilityEditorToolbar(TSharedPtr<FAblAbilityEditor> InAbilityEditor);
+
 	/* Populates the Toolbar with basic asset commands. */
-	void SetupToolbar(TSharedPtr<FExtender> Extender, TSharedPtr<FAblAbilityEditor> InAbilityEditor);
+	void SetupToolbar(TSharedPtr<FExtender> Extender );
 
 	/* Populates the Toolbar with Timeline specific commands. */
-	void AddTimelineToolbar(TSharedPtr<FExtender> Extender, TSharedPtr<FAblAbilityEditor> InAbilityEditor);
+	void AddTimelineToolbar(TSharedPtr<FExtender> Extender);
 
 	void OnPreviewAssetSelected(const FAssetData& Asset);
 	void OnTargetAssetSelected(const FAssetData& Asset);
+	FAssetData OnGetPreviewAsset() const;
+	FAssetData OnGetTargetAsset() const;
 
 	TSharedRef<SWidget> OnAddPreviewAssetWidgets();
 	TSharedRef<SWidget> OnAddTargetAssetWidgets();
 	TSharedRef<SWidget> GenerateForceTargetComboBox();
 	void SetForceTarget(int index);
 
-	FReply OnResetPreviewAsset();
-	FReply OnResetTargetAsset();
+	void OnResetPreviewAsset();
+	void OnResetTargetAsset();
 	FReply OnAddTargetAsset();
 private:
 	bool IsAssetValid(const FAssetData& Asset) const;
@@ -49,6 +54,9 @@ private:
 
 	/* Pointer back to the Ability Editor that owns us. */
 	TWeakPtr<FAblAbilityEditor> m_AbilityEditor;
+
+	/* Weakptr to our Editor Settings. */
+	TWeakObjectPtr<UAblAbilityEditorSettings> m_AbilityEditorSettings;
 
 	/* Play Icon */
 	FSlateIcon m_PlayIcon;

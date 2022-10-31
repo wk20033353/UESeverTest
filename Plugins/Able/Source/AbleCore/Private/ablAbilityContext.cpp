@@ -13,6 +13,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Tasks/IAblAbilityTask.h"
 
+//--------------------------------------------------------------------------------------------------------------------------------------------
 FVector FAblQueryResult::GetLocation() const
 {
 	FTransform TargetTransform;
@@ -43,9 +44,111 @@ void FAblQueryResult::GetTransform(FTransform& OutTransform) const
 	}
 }
 
+
+//--------------------------------------------------------------------------------------------------------------------------------------------
+FAblAbilityContextParams::FAblAbilityContextParams()
+{
+}
+
+FAblAbilityContextParams::FAblAbilityContextParams(const FAblAbilityContextParams& Context)
+{
+	ClearParams();
+	AppendParams(Context);
+}
+
+void FAblAbilityContextParams::ClearParams()
+{
+	m_IntParameters.Empty();
+	m_FloatParameters.Empty();
+	m_StringParameters.Empty();
+	m_UObjectParameters.Empty();
+	m_VectorParameters.Empty();
+}
+
+void FAblAbilityContextParams::AppendParams(const FAblAbilityContextParams& params)
+{
+	m_IntParameters.Append(params.GetIntParameters());
+	m_FloatParameters.Append(params.GetFloatParameters());
+	m_StringParameters.Append(params.GetStringParameters());
+	m_UObjectParameters.Append(params.GetUObjectParameters());
+	m_VectorParameters.Append(params.GetVectorParameters());
+}
+
+void FAblAbilityContextParams::SetIntParameter(FName Id, int Value)
+{
+	m_IntParameters.Add(Id, Value);
+}
+
+void FAblAbilityContextParams::SetFloatParameter(FName Id, float Value)
+{
+	m_FloatParameters.Add(Id, Value);
+}
+
+void FAblAbilityContextParams::SetStringParameter(FName Id, const FString& Value)
+{
+	m_StringParameters.Add(Id, Value);
+}
+
+void FAblAbilityContextParams::SetUObjectParameter(FName Id, UObject* Value)
+{
+	m_UObjectParameters.Add(Id, Value);
+}
+
+void FAblAbilityContextParams::SetVectorParameter(FName Id, FVector Value)
+{
+	m_VectorParameters.Add(Id, Value);
+}
+
+int FAblAbilityContextParams::GetIntParameter(FName Id) const
+{
+	if (const int* var = m_IntParameters.Find(Id))
+	{
+		return *var;
+	}
+	return 0;
+}
+
+float FAblAbilityContextParams::GetFloatParameter(FName Id) const
+{
+	if (const float* var = m_FloatParameters.Find(Id))
+	{
+		return *var;
+	}
+	return 0.0f;
+}
+
+UObject* FAblAbilityContextParams::GetUObjectParameter(FName Id) const
+{
+	if (m_UObjectParameters.Contains(Id)) // Find is being weird with double ptr.
+	{
+		return m_UObjectParameters[Id];
+	}
+	return nullptr;
+}
+
+FVector FAblAbilityContextParams::GetVectorParameter(FName Id) const
+{
+	if (const FVector* var = m_VectorParameters.Find(Id))
+	{
+		return *var;
+	}
+	return FVector::ZeroVector;
+}
+
+const FString& FAblAbilityContextParams::GetStringParameter(FName Id) const
+{
+	if (const FString* var = m_StringParameters.Find(Id))
+	{
+		return *var;
+	}
+	static FString EmptyString;
+	return EmptyString;
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------------------
 UAblAbilityContext::UAblAbilityContext(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer),    
-    m_AbilityActorStartLocation(FVector::ZeroVector),
+	: Super(ObjectInitializer),
+	m_AbilityActorStartLocation(FVector::ZeroVector),
 	m_Ability(nullptr),
 	m_AbilityComponent(nullptr),
 	m_StackCount(1),
@@ -85,7 +188,7 @@ UAblAbilityContext* UAblAbilityContext::MakeContext(const UAblAbility* Ability, 
 		{
 			if (UWorld* OwnerWorld = ACOwner->GetWorld())
 			{
-				if (UAblAbilityContextSubsystem* ContextSubsystem = OwnerWorld->GetSubsystem<UAblAbilityContextSubsystem>())
+				if (UAblAbilityUtilitySubsystem* ContextSubsystem = OwnerWorld->GetSubsystem<UAblAbilityUtilitySubsystem>())
 				{
 					NewContext = ContextSubsystem->FindOrConstructContext();
 				}
@@ -120,11 +223,7 @@ UAblAbilityContext* UAblAbilityContext::MakeContext(const FAblAbilityNetworkCont
 	UAblAbilityContext* NewContext = MakeContext(NetworkContext.GetAbility().Get(), NetworkContext.GetAbilityComponent().Get(), NetworkContext.GetOwner().Get(), NetworkContext.GetInstigator().Get());
 	NewContext->GetMutableTargetActors().Append(NetworkContext.GetTargetActors());
 	NewContext->SetTargetLocation(NetworkContext.GetTargetLocation());
-	NewContext->GetMutableIntParameters().Append(NetworkContext.GetIntParameters());
-	NewContext->GetMutableFloatParameters().Append(NetworkContext.GetFloatParameters());
-	NewContext->GetMutableStringParameters().Append(NetworkContext.GetStringParameters());
-	NewContext->GetMutableUObjectParameters().Append(NetworkContext.GetUObjectParameters());
-	NewContext->GetMutableVectorParameters().Append(NetworkContext.GetVectorParameters());
+	NewContext->GetMutableParameters().AppendParams(NetworkContext.GetParameters());
 	return NewContext;
 }
 
@@ -141,7 +240,7 @@ void UAblAbilityContext::AllocateScratchPads()
 	TSubclassOf<UAblAbilityScratchPad> AbilityScratchPad = m_Ability->GetAbilityScratchPadClassBP(this);
 	if (UClass* AbilityScratchPadClass = AbilityScratchPad.Get())
 	{
-		if (UAblScratchPadSubsystem* SubSystem = GetScratchPadSubsystem())
+		if (UAblAbilityUtilitySubsystem* SubSystem = GetUtilitySubsystem())
 		{
 			m_AbilityScratchPad = SubSystem->FindOrConstructAbilityScratchPad(AbilityScratchPad);
 			if (m_AbilityScratchPad)
@@ -175,7 +274,7 @@ void UAblAbilityContext::AllocateScratchPads()
 
 void UAblAbilityContext::ReleaseScratchPads()
 {
-	if (UAblScratchPadSubsystem* SubSystem = GetScratchPadSubsystem())
+	if (UAblAbilityUtilitySubsystem* SubSystem = GetUtilitySubsystem())
 	{
 		if (m_AbilityScratchPad)
 		{
@@ -255,104 +354,70 @@ float UAblAbilityContext::GetCurrentTimeRatio() const
 void UAblAbilityContext::SetIntParameter(FName Id, int Value)
 {
 	ABLE_RWLOCK_SCOPE_WRITE(m_ContextVariablesLock);
-	m_IntParameters.Add(Id, Value);
+	m_Parameters.SetIntParameter(Id, Value);
 }
 
 void UAblAbilityContext::SetFloatParameter(FName Id, float Value)
 {
 	ABLE_RWLOCK_SCOPE_WRITE(m_ContextVariablesLock);
-	m_FloatParameters.Add(Id, Value);
+	m_Parameters.SetFloatParameter(Id, Value);
 }
 
 void UAblAbilityContext::SetStringParameter(FName Id, const FString& Value)
 {
 	ABLE_RWLOCK_SCOPE_WRITE(m_ContextVariablesLock);
-	m_StringParameters.Add(Id, Value);
+	m_Parameters.SetStringParameter(Id, Value);
 }
 
 void UAblAbilityContext::SetUObjectParameter(FName Id, UObject* Value)
 {
 	ABLE_RWLOCK_SCOPE_WRITE(m_ContextVariablesLock);
-	m_UObjectParameters.Add(Id, Value);
+	m_Parameters.SetUObjectParameter(Id, Value);
 }
 
 void UAblAbilityContext::SetVectorParameter(FName Id, FVector Value)
 {
 	ABLE_RWLOCK_SCOPE_WRITE(m_ContextVariablesLock);
-	m_VectorParameters.Add(Id, Value);
+	m_Parameters.SetVectorParameter(Id, Value);
 }
 
 int UAblAbilityContext::GetIntParameter(FName Id) const
 {
 	ABLE_RWLOCK_SCOPE_READ(m_ContextVariablesLock);
-	if (const int* var = m_IntParameters.Find(Id))
-	{
-		return *var;
-	}
-	return 0;
+	return m_Parameters.GetIntParameter(Id);
 }
 
 float UAblAbilityContext::GetFloatParameter(FName Id) const
 {
 	ABLE_RWLOCK_SCOPE_READ(m_ContextVariablesLock);
-	if (const float* var = m_FloatParameters.Find(Id))
-	{
-		return *var;
-	}
-	return 0.0f;
+	return m_Parameters.GetFloatParameter(Id);
 }
 
 UObject* UAblAbilityContext::GetUObjectParameter(FName Id) const
 {
 	ABLE_RWLOCK_SCOPE_READ(m_ContextVariablesLock);
-	if (m_UObjectParameters.Contains(Id)) // Find is being weird with double ptr.
-	{
-		return m_UObjectParameters[Id];
-	}
-	return nullptr;
+	return m_Parameters.GetUObjectParameter(Id);
 }
 
 FVector UAblAbilityContext::GetVectorParameter(FName Id) const
 {
 	ABLE_RWLOCK_SCOPE_READ(m_ContextVariablesLock);
-	if (const FVector* var = m_VectorParameters.Find(Id))
-	{
-		return *var;
-	}
-	return FVector::ZeroVector;
+	return m_Parameters.GetVectorParameter(Id);
 }
 
 const FString& UAblAbilityContext::GetStringParameter(FName Id) const
 {
 	ABLE_RWLOCK_SCOPE_READ(m_ContextVariablesLock);
-	if (const FString* var = m_StringParameters.Find(Id))
-	{
-		return *var;
-	}
-	static FString EmptyString;
-	return EmptyString;
+	return m_Parameters.GetStringParameter(Id);
 }
 
-UAblScratchPadSubsystem* UAblAbilityContext::GetScratchPadSubsystem() const
+UAblAbilityUtilitySubsystem* UAblAbilityContext::GetUtilitySubsystem() const
 {
 	if (UWorld* CurrentWorld = GetWorld())
 	{
-		if (UAblScratchPadSubsystem* ScratchPadSubSys = CurrentWorld->GetSubsystem<UAblScratchPadSubsystem>())
+		if (UAblAbilityUtilitySubsystem* UtilitySubsys = CurrentWorld->GetSubsystem<UAblAbilityUtilitySubsystem>())
 		{
-			return ScratchPadSubSys;
-		}
-	}
-
-	return nullptr;
-}
-
-UAblAbilityContextSubsystem* UAblAbilityContext::GetContextSubsystem() const
-{
-	if (UWorld* CurrentWorld = GetWorld())
-	{
-		if (UAblAbilityContextSubsystem* AbilityContextSubsystem = CurrentWorld->GetSubsystem<UAblAbilityContextSubsystem>())
-		{
-			return AbilityContextSubsystem;
+			return UtilitySubsys;
 		}
 	}
 
@@ -376,13 +441,9 @@ void UAblAbilityContext::Reset()
 	m_AsyncQueryTransform = FTransform::Identity;
 	m_TargetLocation = FVector::ZeroVector;
 	m_PredictionKey = 0;
-	m_IntParameters.Empty();
-	m_FloatParameters.Empty();
-	m_StringParameters.Empty();
-	m_UObjectParameters.Empty();
-	m_VectorParameters.Empty();
+	m_Parameters.ClearParams();
 
-	if (UAblAbilityContextSubsystem* ContextSubsystem = GetContextSubsystem())
+	if (UAblAbilityUtilitySubsystem* ContextSubsystem = GetUtilitySubsystem())
 	{
 		ContextSubsystem->ReturnContext(this);
 	}
@@ -421,11 +482,7 @@ FAblAbilityNetworkContext::FAblAbilityNetworkContext(const UAblAbilityContext& C
 	m_Result(EAblAbilityTaskResult::Successful),
 	m_TargetLocation(Context.GetTargetLocation()),
 	m_PredictionKey(0),
-	m_IntParameters(Context.GetIntParameters()),
-	m_FloatParameters(Context.GetFloatParameters()),
-	m_StringParameters(Context.GetStringParameters()),
-	m_UObjectParameters(Context.GetUObjectParameters()),
-	m_VectorParameters(Context.GetVectorParameters())
+	m_Parameters(Context.GetParameters())
 {
 	if (GEngine && GEngine->GetWorld())
 	{
@@ -451,11 +508,7 @@ FAblAbilityNetworkContext::FAblAbilityNetworkContext(const UAblAbilityContext& C
 	m_Result(Result),
 	m_TargetLocation(Context.GetTargetLocation()),
 	m_PredictionKey(0),
-	m_IntParameters(Context.GetIntParameters()),
-	m_FloatParameters(Context.GetFloatParameters()),
-	m_StringParameters(Context.GetStringParameters()),
-	m_UObjectParameters(Context.GetUObjectParameters()),
-	m_VectorParameters(Context.GetVectorParameters())
+	m_Parameters(Context.GetParameters())
 {
 	if (GEngine && GEngine->GetWorld())
 	{
@@ -482,11 +535,7 @@ void FAblAbilityNetworkContext::Reset()
 	m_Result = EAblAbilityTaskResult::Successful;
 	m_TargetLocation = FVector::ZeroVector;
 	m_PredictionKey = 0;
-	m_IntParameters.Empty();
-	m_FloatParameters.Empty();
-	m_StringParameters.Empty();
-	m_UObjectParameters.Empty();
-	m_VectorParameters.Empty();
+	m_Parameters.ClearParams();
 }
 
 bool FAblAbilityNetworkContext::IsValid() const

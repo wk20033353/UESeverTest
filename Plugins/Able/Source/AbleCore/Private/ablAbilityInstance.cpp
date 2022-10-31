@@ -102,10 +102,14 @@ void FAblAbilityInstance::Initialize(UAblAbilityContext& AbilityContext)
 	// Set our initial stacks.
 	SetStackCount(FMath::Max(m_Ability->GetInitialStacks(m_Context), 0));
 
-	// Tell our C++ Delegate
-	if (m_Context->GetSelfAbilityComponent())
+	// Tell our Delegates
+	if (UAblAbilityComponent* AbilityComponent = m_Context->GetSelfAbilityComponent())
 	{
-		m_Context->GetSelfAbilityComponent()->GetOnAbilityStart().Broadcast(*m_Context);
+		// C++
+		AbilityComponent->GetOnAbilityStart().Broadcast(*m_Context);
+
+		// BP
+		AbilityComponent->AbilityStartBPDelegate.Broadcast(m_Context);
 	}
 
 	// Call our OnAbilityStart
@@ -328,10 +332,11 @@ int FAblAbilityInstance::CheckForDecay(UAblAbilityComponent* AbilityComponent)
 {
     if (m_Ability != nullptr)
     {
-        float decayStackTime = m_Ability->GetDecayStackTime(&GetContext());
+        double decayStackTime = (double)m_Ability->GetDecayStackTime(&GetContext());
+		double remainder = 0.0f;
         if (decayStackTime > 0.0f)
         {
-            int cancelStackCount = UKismetMathLibrary::FMod(m_DecayTime, decayStackTime, m_DecayTime);
+            int cancelStackCount = (int)UKismetMathLibrary::FMod64((double)m_DecayTime, (double)decayStackTime, remainder);
             if (cancelStackCount > 0)
             {
                 int newStackCount = FMath::Max(GetStackCount() - cancelStackCount, 0);

@@ -95,7 +95,7 @@ UAblAbilityTaskScratchPad* UAblPossessionTask::CreateScratchPad(const TWeakObjec
 {
 	if (m_UnPossessOnEnd)
 	{
-		if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+		if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 		{
 			static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblPossessionTaskScratchPad::StaticClass();
 			return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

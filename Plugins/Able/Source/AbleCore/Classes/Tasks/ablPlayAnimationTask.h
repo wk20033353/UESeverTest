@@ -127,7 +127,7 @@ protected:
 	void PlayAnimation(const TWeakObjectPtr<const UAblAbilityContext>& Context, const UAnimationAsset* AnimationAsset, const FName& MontageSection, AActor& TargetActor, UAblPlayAnimationTaskScratchPad& ScratchPad, USkeletalMeshComponent& SkeletalMeshComponent, float PlayRate) const;
 
 	/* Helper method to find the AbilityAnimGraph Node, if it exists. */
-	struct FAnimNode_AbilityAnimPlayer* GetAbilityAnimGraphNode(USkeletalMeshComponent* MeshComponent) const;
+	struct FAnimNode_AbilityAnimPlayer* GetAbilityAnimGraphNode(const TWeakObjectPtr<const UAblAbilityContext>& Context, USkeletalMeshComponent* MeshComponent) const;
 
 	// The Animation to play.
     UPROPERTY(EditAnywhere, Category="Animation", meta = (DisplayName = "Animation", AblBindableProperty, AblDefaultBinding = "OnGetAnimationAssetBP", AllowedClasses = "AnimMontage,AnimSequence"))
@@ -137,12 +137,18 @@ protected:
 	FGetAblAnimation m_AnimationAssetDelegate;
 
 	/* The animation montage section to jump to if using Dynamic Montages. */
-    UPROPERTY(EditAnywhere, Category = "Animation", meta = (DisplayName = "Montage Section"))
+    UPROPERTY(EditAnywhere, Category = "Animation", meta = (DisplayName = "Montage Section", AblBindableProperty))
     FName m_AnimationMontageSection;
 
+	UPROPERTY()
+	FGetAblName m_AnimationMontageSectionDelegate;
+
 	/* If set, Jump to this montage section when the Task ends, if using Dynamic Montages. Set it to Name_None to disable this feature.*/
-	UPROPERTY(EditAnywhere, Category = "Animation", meta = (DisplayName = "Montage Section on End"))
+	UPROPERTY(EditAnywhere, Category = "Animation", meta = (DisplayName = "Montage Section on End", AblBindableProperty ))
 	FName m_OnEndAnimationMontageSection;
+
+	UPROPERTY()
+	FGetAblName m_OnEndAnimationMontageSectionDelegate;
 
 	/* What mode to use for this task. 
 	*  Single Node - Plays the Animation as a Single Node Animation outside of the Animation Blueprint (if there is one).
@@ -153,12 +159,18 @@ protected:
 	TEnumAsByte<EAblPlayAnimationTaskAnimMode> m_AnimationMode;
 
 	/* The name of the State Machine we should look for our Ability State in.*/
-	UPROPERTY(EditAnywhere, Category = "Ability Node", meta = (DisplayName = "State Machine Name", EditCondition = "m_AnimationMode == EAblPlayAnimationTaskAnimMode::AbilityAnimationNode"))
+	UPROPERTY(EditAnywhere, Category = "Ability Node", meta = (DisplayName = "State Machine Name", AblBindableProperty, EditCondition = "m_AnimationMode == EAblPlayAnimationTaskAnimMode::AbilityAnimationNode"))
 	FName m_StateMachineName;
 
+	UPROPERTY()
+	FGetAblName m_StateMachineNameDelegate;
+
 	/* The name of the State that contains the Ability Animation Player Node*/
-	UPROPERTY(EditAnywhere, Category = "Ability Node", meta = (DisplayName = "Ability State Name", EditCondition = "m_AnimationMode == EAblPlayAnimationTaskAnimMode::AbilityAnimationNode"))
+	UPROPERTY(EditAnywhere, Category = "Ability Node", meta = (DisplayName = "Ability State Name", AblBindableProperty, EditCondition = "m_AnimationMode == EAblPlayAnimationTaskAnimMode::AbilityAnimationNode"))
 	FName m_AbilityStateName;
+
+	UPROPERTY()
+	FGetAblName m_AbilityStateNameDelegate;
 
 	/* If the node is already playing an animation, this is the blend used transition to this animation.*/
 	UPROPERTY(EditAnywhere, Category = "Ability Node", meta = (DisplayName = "Blend In", EditCondition = "m_AnimationMode == EAblPlayAnimationTaskAnimMode::AbilityAnimationNode"))
@@ -180,8 +192,11 @@ protected:
 	FGetAblBlendTimes m_DynamicMontageBlendDelegate;
 
 	// Slot Name to use for the Sequence when playing as a dynamic montage.
-	UPROPERTY(EditAnywhere, Category = "Dynamic Montage", meta = (DisplayName = "Slot Name", EditCondition = "m_AnimationMode == EAblPlayAnimationTaskAnimMode::DynamicMontage"))
+	UPROPERTY(EditAnywhere, Category = "Dynamic Montage", meta = (DisplayName = "Slot Name", AblBindableProperty, EditCondition = "m_AnimationMode == EAblPlayAnimationTaskAnimMode::DynamicMontage"))
 	FName m_SlotName;
+
+	UPROPERTY()
+	FGetAblName m_SlotNameDelegate;
 
 	// Used when attempting to play a Slot Animation Asset as a Dynamic Montage, or playing a Montage Asset (including as a Single Node Animation). Offsets the starting time of the animation.
 	UPROPERTY(EditAnywhere, Category = "Dynamic Montage", meta = (DisplayName = "Time To Start At", AblBindableProperty, EditCondition = "m_AnimationMode != EAblPlayAnimationTaskAnimMode::AbilityAnimationNode"))

@@ -4,6 +4,8 @@
 
 #include "EditorViewportClient.h"
 #include "PreviewScene.h"
+#include "UnrealWidgetFwd.h"
+#include "UnrealWidget.h"
 
 class FAblAbilityEditor;
 class SAbilityEditorViewport;
@@ -14,12 +16,6 @@ class FAbilityEditorPreviewScene : public FPreviewScene
 {
 public:
 	FAbilityEditorPreviewScene(ConstructionValues CVS);
-
-private:
-	/** Editor accessory components **/
-	UStaticMeshComponent*				m_EditorFloorComp;
-	UStaticMeshComponent*				m_EditorSkyComp;
-	UExponentialHeightFogComponent*		m_EditorHeightFogComponent;
 };
 
 class FAbilityEditorViewportClient : public FEditorViewportClient
@@ -39,7 +35,7 @@ public:
 	virtual void TrackingStarted(const struct FInputEventState& InInputState, bool bIsDragging, bool bNudge) override;
 	virtual void TrackingStopped() override;
 
-	virtual FWidget::EWidgetMode GetWidgetMode() const override;
+	virtual UE::Widget::EWidgetMode GetWidgetMode() const override;
 	virtual FVector GetWidgetLocation() const override;
 
 	FTransform GetWorldPositionForMouse(int32 MouseX, int32 MouseY);

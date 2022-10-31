@@ -215,7 +215,7 @@ void UAblTargetingCone::ProcessResults(UAblAbilityContext& Context, const TArray
 			{
 				if (Is3DSlice())
 				{
-					ValidEntry = FVector::DistSquared(ResultLocation, QueryLocation) < HeightSqr;
+					ValidEntry = FMath::Abs(ResultLocation.Z - QueryLocation.Z) <= _Height;
 				}
 				else
 				{

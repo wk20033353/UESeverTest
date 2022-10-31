@@ -29,7 +29,8 @@ UAblTurnToTask::UAblTurnToTask(const FObjectInitializer& ObjectInitializer)
 	m_RotationVector(ForceInitToZero),
 	m_TrackTarget(false),
 	m_SetYaw(true),
-	m_SetPitch(false)
+	m_SetPitch(false),
+	m_TaskRealm(EAblAbilityTaskRealm::ATR_ClientAndServer)
 {
 
 }
@@ -129,7 +130,7 @@ void UAblTurnToTask::OnTaskEnd(const TWeakObjectPtr<const UAblAbilityContext>& C
 
 UAblAbilityTaskScratchPad* UAblTurnToTask::CreateScratchPad(const TWeakObjectPtr<UAblAbilityContext>& Context) const
 {
-	if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+	if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 	{
 		static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblTurnToTaskScratchPad::StaticClass();
 		return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);

@@ -124,7 +124,7 @@ void UAblPlayerCameraShakeTask::OnTaskEnd(const TWeakObjectPtr<const UAblAbility
 
 UAblAbilityTaskScratchPad* UAblPlayerCameraShakeTask::CreateScratchPad(const TWeakObjectPtr<UAblAbilityContext>& Context) const
 {
-	if (UAblScratchPadSubsystem* Subsystem = Context->GetScratchPadSubsystem())
+	if (UAblAbilityUtilitySubsystem* Subsystem = Context->GetUtilitySubsystem())
 	{
 		static TSubclassOf<UAblAbilityTaskScratchPad> ScratchPadClass = UAblPlayerCameraShakeTaskScratchPad::StaticClass();
 		return Subsystem->FindOrConstructTaskScratchPad(ScratchPadClass);
